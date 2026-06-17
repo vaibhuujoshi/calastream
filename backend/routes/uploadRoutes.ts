@@ -1,5 +1,7 @@
-import { type Request, type Response, Router } from "express";
+import { Router } from "express";
 import { prisma } from "../db/db";
+import { uploadSchema } from "../validators/uploadValidators";
+import auth from "../middlewares/authMiddleware";
 
 const uploadRouter = Router();
 
@@ -21,3 +23,19 @@ uploadRouter.get('/video/:id', async (req, res) => {
     res.json(video);
 })
 
+uploadRouter.post('/video', auth, async (req, res) => {
+    //@ts-ignore
+    const userId = req.userId;
+    const parsed = uploadSchema.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; };
+
+    const { videoUrl, thumbnail, title, description } = parsed.data;
+
+    const video = await prisma.uploads.create({
+        data: { videoUrl, thumbnail, title, description, userId }
+    });
+
+    res.status(201).json(video);
+})
+
+export default uploadRouter;
