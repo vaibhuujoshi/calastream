@@ -151,9 +151,9 @@ const AuthCard: React.FC<AuthCardProps> = ({ onSuccess }) => {
                         className="w-full px-4 py-3.5 border border-[#222] rounded-lg bg-[#111] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-white transition-colors text-sm appearance-none"
                       >
                         <option value="" disabled className="text-zinc-600">Select Gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="others">Others</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Others</option>
                       </select>
                     </div>
 
