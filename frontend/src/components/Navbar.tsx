@@ -28,8 +28,8 @@ export function Navbar({ onToggleSidebar, isLoggedIn, currentUser, onOpenAuth }:
 
                 <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
                     <div className="w-5 h-5 bg-purple-600 rounded-sm transform rotate-45 shrink-0"></div>
-                    <span className="text-xl font-bold tracking-widest text-white uppercase hidden sm:block">
-                        StreamLine
+                    <span className="text-xl font-bold tracking-widest text-white  hidden sm:block">
+                        CalaStream
                     </span>
                 </div>
             </div>
