@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { VideoCard } from "../components/VideoCard";
-import { MOCK_VIDEOS } from "../lib/mockData";
+// import { MOCK_VIDEOS } from "../lib/mockData";
 import AuthCard from "../components/auth/AuthCard";
 import AuthModal from "../components/auth/AuthModal";
-import { Navbar } from "../components/NavBar";
+import { Navbar } from "../components/Navbar";
+import { getVideos } from "../api/videos";
 
 export function FeedPage() {
+    const [MOCK_VIDEOS, SET_MOCKVIDEOS] = useState([]);
+    useEffect(() => {
+        getVideos().then(res => {
+            SET_MOCKVIDEOS(res || []);
+            console.log(res)
+        });
+    }, []);
     // Check if it's mobile on mount to start collapsed
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
         typeof window !== 'undefined' ? window.innerWidth < 640 : false
