@@ -7,11 +7,11 @@ const uploadRouter = Router();
 
 uploadRouter.get('/videos', async (req, res) => {
     const videos = await prisma.uploads.findMany({
-        include: { user: { select: { id: true, channelName: true, profilePicture: true } } },
+        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true, gender: true } } },
         orderBy: { createdAt: "desc" }
     });
 
-    res.json(videos);
+    res.json({videos});
 })
 
 uploadRouter.get('/video/:id', async (req, res) => {
