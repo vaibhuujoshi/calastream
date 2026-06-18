@@ -2,8 +2,15 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import userRouter from "./routes/authRoutes";
 import uploadRouter from "./routes/uploadRoutes";
-
+import cors from "cors";
 const app = express();
+
+app.use(cors({
+  origin: "http://localhost:5173", // Allow requests only from this domain
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(cookieParser());
