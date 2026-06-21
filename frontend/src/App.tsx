@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { FeedPage } from "./pages/FeedPage";
+import UploadPage from "./pages/UploadPage";
 
 // Dummy components to test routing navigation visually
 const WatchVideoPlaceholder = () => <div className="p-20 text-white text-2xl">Video Player Page</div>;
@@ -20,7 +21,7 @@ export default function App() {
           {/* Sidebar Navigation Mock Routes */}
           <Route path="/feed/subscriptions" element={<FeedPage />} />
           <Route path="/feed/history" element={<FeedPage />} />
-          <Route path="/upload" element={<FeedPage />} />
+          <Route path="/upload" element={<UploadPage />} />
         </Routes>
       </div>
     </BrowserRouter>
