@@ -10,3 +10,15 @@ export async function getVideos() {
     const data = await response.json();
     return data.videos;
 }
+
+export async function uploadVideo(videoUrl: string, thumbnail: string, title: string, description: string) {
+    const response = await fetch(`${BASE_URL}/video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoUrl, thumbnail, title, description }),
+        credentials: "include"
+    });
+
+    const data = await response.json();
+    return data;
+}
