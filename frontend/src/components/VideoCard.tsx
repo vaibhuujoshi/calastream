@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { type VideoData, formatSubscribers } from "../lib/mockData";
+import { formatDate } from "../lib/formatData";
 
 interface VideoCardProps {
   video: VideoData;
@@ -61,7 +62,7 @@ export function VideoCard({ video }: VideoCardProps) {
           <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5 font-medium">
             <span>{formatSubscribers(video.user.subscriberCount)} views</span>
             <span className="text-[10px]">•</span>
-            <span>{video.createdAt} ago</span>
+            <span>{formatDate(video.createdAt)} ago</span>
           </div>
 
         </div>
