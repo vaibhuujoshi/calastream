@@ -3,6 +3,7 @@ import { signinSchema, signupSchema } from "../validators/authValidators";
 import { prisma } from "../db/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import auth from "../middlewares/authMiddleware";
 const userRouter = Router();
 
 const JWT_SECRET = `${process.env.JWT_SECRET}`;
@@ -56,5 +57,41 @@ userRouter.post('/signin', async (req: Request, res: Response) => {
     })
     res.status(201).json({ token, userId: user.id });
 })
+
+userRouter.get('/profile', auth, async (req, res) => {
+  try {
+    //@ts-ignore
+    const userId = req.userId;
+
+    if (!userId) {
+       return res.status(401).json({ message: "Unauthorised access" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        gender: true,
+        channelName: true,
+        banner: true,
+        profilePicture: true,
+        subscriberCount: true,
+        description: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User profile not found" });
+    }
+
+    return res.status(200).json(user);
+
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 export default userRouter;
