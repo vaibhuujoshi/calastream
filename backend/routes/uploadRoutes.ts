@@ -35,7 +35,7 @@ uploadRouter.get('/videos', async (req, res) => {
 uploadRouter.get('/video/:id', async (req, res) => {
     const video = await prisma.uploads.findFirst({
         where: { id: req.params.id },
-        include: { user: { select: { id: true, channelName: true, profilePicture: true } } }
+        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true,  } } }
     });
 
     if (!video) return res.status(404).json({ error: "Video not found" });
@@ -63,7 +63,7 @@ uploadRouter.post('/video', auth, async (req, res) => {
         data: { videoUrl, thumbnail, title, description, userId }
     });
 
-    res.status(201).json(video);
+    res.status(201).json({video});
 });
 
 uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {
