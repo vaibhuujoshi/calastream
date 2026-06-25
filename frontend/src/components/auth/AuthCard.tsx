@@ -56,10 +56,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ onSuccess }) => {
         // Fetch the user profile details once token is set
         const profileData = await getUserProfile();
         
-        // Destructure out the ID field to store clean client data
-        const { id, ...clientProfile } = profileData;
-        
-        setUser(clientProfile as ClientUserProfile);
+        setUser(profileData as ClientUserProfile);
         onSuccess?.();
       }
     } catch (err: any) {
