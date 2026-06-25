@@ -1,10 +1,16 @@
 const BASE_URL = "http://localhost:3000/api/v1";
 
+export type Gender = 'MALE' | 'FEMALE' | 'OTHERS';
+
 export interface WatchUser {
-    id: string;
-    channelName: string;
-    profilePicture: string | null;
-    subscriberCount: number;
+  id: string;
+  username: string;
+  channelName: string;
+  gender: Gender;
+  banner: string | null;
+  profilePicture: string | null;
+  subscriberCount: number;
+  description: string | null;
 }
 
 export interface WatchVideo {
