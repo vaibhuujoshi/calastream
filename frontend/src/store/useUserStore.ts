@@ -14,7 +14,7 @@ export interface User {
   description: string | null;
 }
 
-export type ClientUserProfile = Omit<User, "id">;
+export type ClientUserProfile = Omit<User, "password">;
 
 interface UserState {
   user: ClientUserProfile | null;
