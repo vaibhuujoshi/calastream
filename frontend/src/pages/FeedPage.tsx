@@ -8,11 +8,12 @@ import { getVideos } from "../api/videos";
 import { useUserStore, type ClientUserProfile } from "../store/useUserStore";
 import { getUserProfile } from "../api/auth";
 import VideoCardSkeleton from "../components/skeletons/VideoCardSkeleton";
+import LoadingScreen from "../components/LoadingScreen";
 
 export function FeedPage() {
     const [MOCK_VIDEOS, SET_MOCKVIDEOS] = useState([]);
     // const [isLoadingVideos, setIsLoadingVideos] = useState(true);
-    
+
     const user = useUserStore((state) => state.user);
     const isLoggedIn = useUserStore((state) => state.isLoggedIn);
     const isInitializing = useUserStore((state) => state.isInitializing);
@@ -73,9 +74,7 @@ export function FeedPage() {
     // Prevent interface rendering while looking up app-mounting cookie validation statuses
     if (isInitializing) {
         return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center text-zinc-500">
-                <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <LoadingScreen />
         );
     }
 
@@ -100,11 +99,11 @@ export function FeedPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-x-4 gap-y-10">
                         {MOCK_VIDEOS.length === 0
                             ? Array.from({ length: 8 }).map((_, index) => (
-                                  <VideoCardSkeleton key={`skeleton-${index}`} />
-                              ))
+                                <VideoCardSkeleton key={`skeleton-${index}`} />
+                            ))
                             : MOCK_VIDEOS.map((video) => (
-                                  <VideoCard key={video.id} video={video} />
-                              ))}
+                                <VideoCard key={video.id} video={video} />
+                            ))}
                     </div>
                 </main>
             </div>
