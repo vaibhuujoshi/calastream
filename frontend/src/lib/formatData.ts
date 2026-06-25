@@ -26,3 +26,9 @@ export function formatDate(dateString: string): string {
   // Returns standard formatting like "Jun 11"
   return postDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
+
+export function formatSubscribers(count: number): string {
+  if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+  if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+  return count.toString();
+}
