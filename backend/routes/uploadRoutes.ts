@@ -26,7 +26,7 @@ export const S3 = new S3Client({
 
 uploadRouter.get('/videos', async (req, res) => {
     const videos = await prisma.uploads.findMany({
-        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true, gender: true } } },
+        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true, gender: true, banner: true, username: true, description: true,  } } },
         orderBy: { createdAt: "desc" }
     });
     res.json({ videos });
@@ -35,19 +35,22 @@ uploadRouter.get('/videos', async (req, res) => {
 uploadRouter.get('/video/:id', async (req, res) => {
     const video = await prisma.uploads.findFirst({
         where: { id: req.params.id },
-        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true,  } } }
+        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true, } } }
     });
 
     if (!video) return res.status(404).json({ error: "Video not found" });
 
     const getCommand = new GetObjectCommand({
         Bucket: B2_BUCKET_NAME,
-        Key: video.videoUrl 
+        Key: video.videoUrl
     });
 
     const getUrl = await getSignedUrl(S3, getCommand, { expiresIn: 7200 });
-    video.videoUrl = getUrl;
-    
+
+    if (video.videoUrl.startsWith("videos/")) {
+        video.videoUrl = getUrl;
+    }
+
     res.json({ video });
 });
 
@@ -63,7 +66,7 @@ uploadRouter.post('/video', auth, async (req, res) => {
         data: { videoUrl, thumbnail, title, description, userId }
     });
 
-    res.status(201).json({video});
+    res.status(201).json({ video });
 });
 
 uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {
@@ -76,12 +79,12 @@ uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {
             ContentType: "video/mp4",
         });
 
-        const putUrl = await getSignedUrl(S3, putCommand, { expiresIn: 900, signableHeaders: new Set(["host"])  });
+        const putUrl = await getSignedUrl(S3, putCommand, { expiresIn: 900, signableHeaders: new Set(["host"]) });
 
         return res.status(200).json({
             success: true,
             putUrl: putUrl,
-            videoPath: uniqueKey 
+            videoPath: uniqueKey
         });
 
     } catch (error) {
