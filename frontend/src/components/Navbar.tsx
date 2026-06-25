@@ -45,6 +45,8 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
         }
     };
 
+    console.log(user)
+
     return (
         <nav className="fixed top-0 left-0 right-0 h-16 bg-[#050505] border-b border-[#1A1A1A] z-40 flex items-center justify-between px-4 select-none">
 
@@ -120,7 +122,7 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
 
                                 {/* Custom Profile Action Items */}
                                 <button
-                                    onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }}
+                                    onClick={() => { setIsDropdownOpen(false); navigate(`/channel/${user.id}`); }}
                                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-[#111111] transition-colors text-left cursor-pointer focus:outline-none"
                                 >
                                     <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
