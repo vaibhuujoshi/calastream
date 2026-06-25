@@ -7,6 +7,7 @@ import { ChannelHeader } from "../components/channel/ChannelHeader";
 import { getVideos, type WatchVideo, type WatchUser } from "../api/videos";
 import AuthModal from "../components/auth/AuthModal";
 import AuthCard from "../components/auth/AuthCard";
+import ChannelPageSkeleton from "../components/skeletons/ChannelPageSkeleton";
 
 export default function ChannelPage() {
     // Extract channelId using searchParams (e.g. /channel?channelId=123)
@@ -65,13 +66,13 @@ export default function ChannelPage() {
         loadChannelData();
     }, [channelId]);
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-                <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
+    // if (isLoading) {
+    //     return (
+    //         <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+    //             <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden antialiased">
@@ -96,7 +97,9 @@ export default function ChannelPage() {
                 <Sidebar isCollapsed={isSidebarCollapsed} />
 
                 {/* 3. Main Channel Content Area */}
-                <main
+                {isLoading ? (
+                    <ChannelPageSkeleton isSidebarCollapsed={isSidebarCollapsed} />
+                ) : <main
                     className={`flex-1 p-4 md:p-6 lg:p-8 transition-all duration-300 w-full ${isSidebarCollapsed ? 'sm:ml-20' : 'sm:ml-60'
                         }`}
                 >
@@ -127,7 +130,7 @@ export default function ChannelPage() {
                         </div>
 
                     </div>
-                </main>
+                </main>}
             </div>
 
             {/* Render Auth Modal if triggered */}
