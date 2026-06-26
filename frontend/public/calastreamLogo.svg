@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="calaMinimalGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#6D28D9" />
+    </linearGradient>
+  </defs>
+  
+  <path 
+    d="M 75 25 A 35 35 0 1 0 75 75" 
+    stroke="url(#calaMinimalGrad)" 
+    stroke-width="14" 
+    stroke-linecap="round" 
+  />
+  
+  <polygon 
+    points="45,32 75,50 45,68" 
+    fill="url(#calaMinimalGrad)" 
+  />
+</svg>

@@ -1,3 +1,5 @@
+import { CalaStreamLogo } from "./CalastreamLogo";
+
 export default function LoadingScreen() {
     return (
         <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center relative overflow-hidden font-sans select-none z-50">
@@ -17,9 +19,10 @@ export default function LoadingScreen() {
 
                     {/* Middle reverse-spinning ring */}
                     <div className="absolute inset-2 rounded-full border-[1.5px] border-indigo-500/10 border-b-indigo-400 animate-[spin_1.5s_linear_infinite_reverse]" />
+                    <span className="animate-pulse rounded-full shadow-[0_0_25px_rgba(147,51,234,0.6)] p-0"> <CalaStreamLogo /></span>
 
                     {/* Inner glowing pulsing brand logo (The rotated square from your Navbar) */}
-                    <div className="w-5 h-5 bg-linear-to-tr from-purple-600 to-indigo-400 rounded-sm transform rotate-45 animate-pulse shadow-[0_0_25px_rgba(147,51,234,0.6)]" />
+                    {/* <div className="w-5 h-5 bg-linear-to-tr from-purple-600 to-indigo-400 rounded-sm transform rotate-45 animate-pulse shadow-[0_0_25px_rgba(147,51,234,0.6)]" /> */}
                 </div>
 
                 {/* Typography & Status */}

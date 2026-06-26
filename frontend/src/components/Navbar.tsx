@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../store/useUserStore"; 
 import { logoutUser } from "../api/auth";
+import { CalaStreamLogo } from "./CalastreamLogo";
 
 interface NavbarProps {
     onToggleSidebar: () => void;
@@ -45,8 +46,6 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
         }
     };
 
-    console.log(user)
-
     return (
         <nav className="fixed top-0 left-0 right-0 h-16 bg-[#050505] border-b border-[#1A1A1A] z-40 flex items-center justify-between px-4 select-none">
 
@@ -63,7 +62,9 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
                 </button>
 
                 <div onClick={() => { setIsDropdownOpen(false); navigate('/'); }} className="flex items-center gap-2 cursor-pointer group">
-                    <div className="w-5 h-5 bg-purple-600 rounded-sm transform rotate-45 shrink-0 group-hover:scale-105 transition-transform duration-200"></div>
+                    {/* <div className="w-5 h-5 bg-purple-600 rounded-sm transform rotate-45 shrink-0 group-hover:scale-105 
+                    transition-transform duration-200"></div> */}
+                    <CalaStreamLogo />
                     <span className="text-xl font-bold tracking-widest text-white hidden sm:block">
                         CalaStream
                     </span>
