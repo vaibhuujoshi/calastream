@@ -23,17 +23,60 @@ model User {
   subscriberCount Int       @default(0)
   description     String?
   uploads         Uploads[]
+
+  // Implicit self many-to-many relation
+  subscribers    User[]         @relation("UserFollows")
+  subscriptions  User[]         @relation("UserFollows")
+  likes          Likes[]
+  comments       Comments[]
+  watchHistories WatchHistory[]
 }
 
 model Uploads {
-  id          String   @id @default(uuid())
-  videoUrl    String
-  thumbnail   String
-  description String
-  title       String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
+  id             String         @id @default(uuid())
+  videoUrl       String
+  thumbnail      String
+  description    String
+  title          String
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  createdAt      DateTime       @default(now())
+  likes          Likes[]
+  comments       Comments[]
+  watchHistories WatchHistory[]
+}
+
+model Likes {
+  id      String  @id @default(uuid())
+  userId  String
+  videoId String
+  user    User    @relation(fields: [userId], references: [id])
+  video   Uploads @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
+}
+
+model Comments {
+  id        String   @id @default(uuid())
+  userId    String
+  videoId   String
+  comment   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  video     Uploads  @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
+}
+
+model WatchHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  videoId   String
+  watchedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  video     Uploads  @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
 }
 
 enum Gender {
