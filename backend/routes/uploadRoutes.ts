@@ -25,33 +25,103 @@ export const S3 = new S3Client({
 });
 
 uploadRouter.get('/videos', async (req, res) => {
-    const videos = await prisma.uploads.findMany({
-        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true, gender: true, banner: true, username: true, description: true,  } } },
-        orderBy: { createdAt: "desc" }
-    });
-    res.json({ videos });
+    try {
+        // 1. Fetch raw data with aggregation count block
+        const rawVideos = await prisma.uploads.findMany({
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        channelName: true,
+                        profilePicture: true,
+                        gender: true,
+                        banner: true,
+                        username: true,
+                        description: true,
+                        _count: {
+                            select: { subscribers: true }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: "desc" }
+        });
+
+        // 2. Format loop to inject subscriberCount flatly
+        const formattedVideos = rawVideos.map((video) => {
+            const { _count, ...userData } = video.user;
+            return {
+                ...video,
+                user: {
+                    ...userData,
+                    subscriberCount: _count.subscribers
+                }
+            };
+        });
+
+        return res.json({ videos: formattedVideos });
+
+    } catch (error) {
+        console.error("Failed to fetch videos feed:", error);
+        return res.status(500).json({ error: "Failed to fetch videos" });
+    }
 });
 
 uploadRouter.get('/video/:id', async (req, res) => {
-    const video = await prisma.uploads.findFirst({
-        where: { id: req.params.id },
-        include: { user: { select: { id: true, channelName: true, profilePicture: true, subscriberCount: true, } } }
-    });
+    try {
+        // 1. Updated to match the /videos aggregation structure exactly
+        const rawVideo = await prisma.uploads.findFirst({
+            where: { id: req.params.id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        channelName: true,
+                        profilePicture: true,
+                        gender: true,
+                        banner: true,
+                        username: true,
+                        description: true,
+                        _count: {
+                            select: { subscribers: true }
+                        }
+                    }
+                }
+            }
+        });
 
-    if (!video) return res.status(404).json({ error: "Video not found" });
+        if (!rawVideo) {
+            return res.status(404).json({ error: "Video not found" });
+        }
 
-    const getCommand = new GetObjectCommand({
-        Bucket: B2_BUCKET_NAME,
-        Key: video.videoUrl
-    });
+        // 2. Format the single video payload identically to the map loop above
+        const { _count, ...userData } = rawVideo.user;
+        const formattedVideo = {
+            ...rawVideo,
+            user: {
+                ...userData,
+                subscriberCount: _count.subscribers
+            }
+        };
 
-    const getUrl = await getSignedUrl(S3, getCommand, { expiresIn: 7200 });
+        // 3. Generate S3/B2 file delivery access URL signature
+        const getCommand = new GetObjectCommand({
+            Bucket: B2_BUCKET_NAME,
+            Key: formattedVideo.videoUrl
+        });
 
-    if (video.videoUrl.startsWith("videos/")) {
-        video.videoUrl = getUrl;
+        const getUrl = await getSignedUrl(S3, getCommand, { expiresIn: 7200 });
+
+        if (formattedVideo.videoUrl.startsWith("videos/")) {
+            formattedVideo.videoUrl = getUrl;
+        }
+
+        return res.json({ video: formattedVideo });
+
+    } catch (error) {
+        console.error("Single Video Details Fetch Error:", error);
+        return res.status(500).json({ error: "Internal server error fetching video data." });
     }
-
-    res.json({ video });
 });
 
 uploadRouter.post('/video', auth, async (req, res) => {
