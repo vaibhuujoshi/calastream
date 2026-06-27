@@ -10,6 +10,7 @@ import { VideoDescription } from '../components/watch/VideoDescription';
 import { CommentsSection } from '../components/watch/CommentSection';
 import AuthModal from '../components/auth/AuthModal';
 import AuthCard from '../components/auth/AuthCard';
+import WatchPageSkeleton from '../components/skeletons/WatchPageSkeleton';
 
 export default function WatchPage() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -19,7 +20,7 @@ export default function WatchPage() {
   const [video, setVideo] = useState<WatchVideo | null>(null);
   const [suggested, setSuggested] = useState<WatchVideo[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  
+
   // Clean State Management: One unified boolean tracking if the slide-over drawer is active
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -50,17 +51,9 @@ export default function WatchPage() {
     loadData();
   }, [videoId]);
 
-  if (isLoading || !video) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden antialiased">
-      
+
       {/* 1. Global Navigation Plate */}
       <Navbar
         onToggleSidebar={() => setIsMenuDrawerOpen(!isMenuDrawerOpen)}
@@ -75,8 +68,8 @@ export default function WatchPage() {
           onClick={() => setIsMenuDrawerOpen(false)}
         >
           {/* Menu Panel Containment Frame */}
-          <div 
-            className="w-60 h-full bg-[#050505] relative z-50" 
+          <div
+            className="w-60 h-full bg-[#050505] relative z-50"
             onClick={(e) => e.stopPropagation()}
           >
             <Sidebar isCollapsed={false} />
@@ -87,22 +80,26 @@ export default function WatchPage() {
       {/* 3. Main Workspace Area */}
       {/* The container uses standard structural values max-w-[1280px] and max-w-[420px] to match Tailwinds build engine */}
       <div className="pt-24 px-4 md:px-6 lg:px-8 max-w-[1800px] mx-auto pb-12">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+        {isLoading || !video ? (
+          <WatchPageSkeleton />
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
 
-          {/* Core Player, Meta, and Editorial Thread Column */}
-          <div className="flex-1 w-full max-w-7xl">
-            <VideoPlayer videoUrl={video.videoUrl} thumbnail={video.thumbnail} />
-            <VideoInfo video={video} />
-            <VideoDescription video={video} />
-            <CommentsSection />
+            {/* Core Player, Meta, and Editorial Thread Column */}
+            <div className="flex-1 w-full max-w-7xl">
+              <VideoPlayer videoUrl={video.videoUrl} thumbnail={video.thumbnail} />
+              <VideoInfo video={video} />
+              <VideoDescription video={video} />
+              <CommentsSection />
+            </div>
+
+            {/* Sidebar Recommendation Stream Column */}
+            <div className="w-full lg:w-100 xl:w-105 shrink-0 border-t lg:border-t-0 border-[#1A1A1A] pt-6 lg:pt-0">
+              <SuggestedVideos videos={suggested} />
+            </div>
+
           </div>
-
-          {/* Sidebar Recommendation Stream Column */}
-          <div className="w-full lg:w-100 xl:w-105 shrink-0 border-t lg:border-t-0 border-[#1A1A1A] pt-6 lg:pt-0">
-            <SuggestedVideos videos={suggested} />
-          </div>
-
-        </div>
+        )}
       </div>
 
       {/* 4. Portal Account Verification Overlays */}
