@@ -1,10 +1,24 @@
 import { useNavigate } from 'react-router-dom';
 import { type WatchVideo } from '../../api/videos';
+import { SubscribeButton } from '../SubscribeButton';
+import { useState } from 'react';
 
-export function VideoInfo({ video }: { video: WatchVideo }) {
+interface VideoHeaderProps {
+  video: WatchVideo;
+  initialIsSubscribed?: boolean;
+}
+
+export function VideoInfo({ video, initialIsSubscribed = false  }: VideoHeaderProps) {
   const formatCompactNumber = (num: number) => {
     return new Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(num);
   };
+
+  const [headerSubCount, setHeaderSubCount] = useState<number>(video.user.subscriberCount);
+  
+    // Sync the visual count whenever the minimal button triggers an optimistic update or rollback
+    const handleSubscribeChange = (newSubStatus: boolean) => {
+      setHeaderSubCount((prev) => (newSubStatus ? prev + 1 : Math.max(0, prev - 1)));
+    };
 
   const navigate = useNavigate();
 
@@ -27,11 +41,15 @@ export function VideoInfo({ video }: { video: WatchVideo }) {
             <span
               onClick={() => navigate(`/channel/${video.user.id}`)}
               className="text-base font-semibold text-white leading-tight line-clamp-2 hover:text-gray-400 cursor-pointer transition-colors">{video.user.channelName}</span>
-            <span className="text-zinc-400 text-xs">{formatCompactNumber(video.user.subscriberCount)} Subscribers</span>
+            <span className="text-zinc-400 text-xs">{formatCompactNumber(headerSubCount)} Subscribers</span>
           </div>
-          <button className="ml-2 bg-white text-black px-4 py-2 rounded-full font-semibold text-sm hover:bg-zinc-200 transition">
-            Subscribe
-          </button>
+
+          <SubscribeButton
+            channelId={video.user.id}
+            initialIsSubscribed={initialIsSubscribed}
+            onSubscribeChange={handleSubscribeChange}
+            className="mt-2 md:mt-0"
+          />
         </div>
 
         {/* Action Buttons */}
