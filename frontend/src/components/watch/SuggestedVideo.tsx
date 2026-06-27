@@ -23,7 +23,9 @@ export function SuggestedVideos({ videos }: { videos: WatchVideo[] }) {
             <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 rounded">12:34</span>
           </div>
           <div className="flex flex-col py-1">
-            <h4 className="text-sm text-white font-medium leading-tight line-clamp-2 group-hover:text-purple-400 transition-colors">
+            <h4
+              onClick={() => navigate(`/watch/${video.id}`)}
+              className="text-sm text-white font-medium leading-tight line-clamp-2 group-hover:text-purple-400 transition-colors">
               {video.title}
             </h4>
             <span
