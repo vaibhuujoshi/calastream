@@ -1,9 +1,13 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { uploadVideo } from "../api/videos";
+import { toast } from "sonner";
 
 export default function UploadPage() {
   const navigate = useNavigate();
+
+  // 1. Authentication State
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
 
   // Core Form Input State
   const [title, setTitle] = useState<string>("");
@@ -16,6 +20,33 @@ export default function UploadPage() {
   const [fileName, setFileName] = useState<string>("");
   const [uploadStatus, setUploadStatus] = useState<"idle" | "fetching" | "uploading" | "success" | "error">("idle");
 
+  const BASE_URL = "http://localhost:3000/api/v1"; // Moved up to be accessible across functions
+
+  // 2. Check Authentication on Mount
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const response = await fetch(`${BASE_URL}/profile`, {
+          method: "GET",
+          credentials: "include", // CRITICAL: Sends the httpOnly JWT cookie
+        });
+
+        if (!response.ok) {
+          toast.error("You must be logged in to upload content");
+          navigate("/"); // Redirect to your login route
+          return;
+        }
+
+        setIsAuthChecking(false); // Auth successful, reveal the page
+      } catch (error) {
+        toast.error("Authentication check failed");
+        navigate("/");
+      }
+    }
+
+    checkAuth();
+  }, [navigate]);
+
   // Multi-stage Binary Pre-signed Storage File Processor
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -24,8 +55,6 @@ export default function UploadPage() {
     setFileName(file.name);
     setIsUploading(true);
     setUploadStatus("fetching");
-
-    const BASE_URL = "http://localhost:3000/api/v1";
 
     try {
       // Step 1: Request pre-signed secure signature path from backend pipeline
@@ -49,15 +78,17 @@ export default function UploadPage() {
       });
 
       if (uploadResponse.ok) {
-        console.log("✅ Video payload routed successfully!");
         setVideoUrl(videoPath);
         setUploadStatus("success");
+        // 3. Replaced console.log with a toast
+        toast.success("Video payload routed successfully!");
       } else {
         throw new Error("Cloud pipe transmission failure");
       }
     } catch (error) {
-      console.error("❌ Process interrupted:", error);
       setUploadStatus("error");
+      // 4. Replaced console.error with a toast
+      toast.error(error instanceof Error ? error.message : "Process interrupted");
     } finally {
       setIsUploading(false);
     }
@@ -65,13 +96,31 @@ export default function UploadPage() {
 
   // Final Form Submit Trigger
   function handleFormSubmission() {
-    if (!title || !videoUrl) return;
+    // 5. Added form validation toasts
+    if (!title) return toast.warning("Please provide a video stream title");
+    if (!videoUrl) return toast.warning("Please wait for the video asset to finish syncing");
 
-    uploadVideo(videoUrl, thumbnail, title, description)
-      .then(() => {
-        console.log("video uploaded");
-        navigate('/');
-      });
+    // 6. Wrapped final upload in toast.promise for smooth UI feedback
+    toast.promise(
+      uploadVideo(videoUrl, thumbnail, title, description),
+      {
+        loading: 'Finalizing and broadcasting to stream...',
+        success: () => {
+          navigate('/');
+          return 'Broadcast successful! 🚀';
+        },
+        error: 'Failed to broadcast video. Please try again.',
+      }
+    );
+  }
+
+  // 7. Loading state overlay while checking authentication
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -193,7 +242,7 @@ export default function UploadPage() {
           {/* Row 3: Thumbnail Asset Router String Link */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Thumbnail Cover Cover Source URL
+              Thumbnail Cover Source URL
             </label>
             <input
               type="text"
@@ -240,9 +289,7 @@ export default function UploadPage() {
             </button>
             
           </div>
-
         </div>
-
       </div>
     </div>
   );
