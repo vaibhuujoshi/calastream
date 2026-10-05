@@ -24,12 +24,11 @@ model User {
   description     String?
   uploads         Uploads[]
 
-  // Implicit self many-to-many relation
-  subscribers    User[]         @relation("UserFollows")
-  subscriptions  User[]         @relation("UserFollows")
   likes          Likes[]
   comments       Comments[]
   watchHistories WatchHistory[]
+  subscriptions   Subscription[] @relation("UserSubscribers")
+  subscribers     Subscription[] @relation("UserSubscriptions")
 }
 
 model Uploads {
@@ -44,6 +43,17 @@ model Uploads {
   likes          Likes[]
   comments       Comments[]
   watchHistories WatchHistory[]
+}
+
+model Subscription {
+  id           String   @id @default(uuid())
+  subscriberId String
+  creatorId    String
+  createdAt    DateTime @default(now())
+  subscriber   User     @relation("UserSubscribers", fields: [subscriberId], references: [id], onDelete: Cascade)
+  creator      User     @relation("UserSubscriptions", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, creatorId])
 }
 
 model Likes {
