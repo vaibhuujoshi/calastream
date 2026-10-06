@@ -38,7 +38,9 @@ export function VideoCard({ video }: VideoCardProps) {
           onClick={() => navigate(`/channel/${video.user.id}`)}
           className="w-9 h-9 rounded-full object-cover mt-1 cursor-pointer border border-[#222] hover:border-purple-500 transition-colors shrink-0"
         /> */}
-        <div className="w-9 h-9 rounded-full overflow-hidden mt-1 cursor-pointer border border-[#222] hover:border-purple-500 transition-colors shrink-0">
+        <div
+          onClick={() => navigate(`/channel/${video.user.id}`)}
+          className="w-9 h-9 rounded-full overflow-hidden mt-1 cursor-pointer border border-[#222] hover:border-purple-500 transition-colors shrink-0">
           {video.user.profilePicture ? (
             <img
               src={video.user.profilePicture}
@@ -73,7 +75,7 @@ export function VideoCard({ video }: VideoCardProps) {
 
           {/* Stats Row */}
           <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5 font-medium">
-            <span>{formatSubscribers(video.user.subscriberCount)} views</span>
+            <span>{Math.floor(Math.random() * 21)} views</span>
             <span className="text-[10px]">•</span>
             <span>{formatDate(video.createdAt)} ago</span>
           </div>
