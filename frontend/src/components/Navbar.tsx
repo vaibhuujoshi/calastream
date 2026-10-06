@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUserStore } from "../store/useUserStore"; 
+import { useUserStore } from "../store/useUserStore";
 import { logoutUser } from "../api/auth";
 import { CalaStreamLogo } from "./CalastreamLogo";
 
@@ -11,7 +11,7 @@ interface NavbarProps {
 
 export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
     const navigate = useNavigate();
-    
+
     // Select values and actions directly from your Zustand store
     const user = useUserStore((state) => state.user);
     const isLoggedIn = useUserStore((state) => state.isLoggedIn);
@@ -35,14 +35,14 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
     const handleLogoutClick = async () => {
         try {
             await logoutUser();
-            
+
         } catch (error) {
             console.error("Cookie clearance error:", error);
         } finally {
             // Clear client UI state, close dropdown, and bounce user back home
-            logout(); 
+            logout();
             setIsDropdownOpen(false);
-            navigate("/"); 
+            navigate("/");
         }
     };
 
@@ -86,11 +86,15 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
             </div>
 
             {/* Right Column: User Controls & Dropdown Menu */}
-            <div className="flex items-center gap-4 relative" ref={dropdownRef}>
+            <div
+                className="flex items-center gap-4 relative" ref={dropdownRef}
+                onMouseEnter={() => setIsDropdownOpen(true)}
+                onMouseLeave={() => setIsDropdownOpen(false)}
+            >
                 {isLoggedIn && user ? (
                     <>
                         {/* Profile Trigger Button */}
-                        <button 
+                        <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             className="focus:outline-none block cursor-pointer group rounded-full"
                         >
