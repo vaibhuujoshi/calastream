@@ -3,14 +3,14 @@ const BASE_URL = "http://localhost:3000/api/v1";
 interface SubscriptionResponse {
     subscribed: boolean;
     message: string;
-    error?: string; 
+    error?: string;
 }
 
 export async function toggleSubscription(creatorId: string): Promise<SubscriptionResponse> {
     const response = await fetch(`${BASE_URL}/subscribe/${creatorId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include" 
+        credentials: "include"
     });
 
     const data = await response.json();
@@ -24,12 +24,23 @@ export async function toggleSubscription(creatorId: string): Promise<Subscriptio
 }
 
 export async function checkSubscriptionStatus(creatorId: string): Promise<{ isSubscribed: boolean }> {
-  const response = await fetch(`${BASE_URL}/subscribe/status/${creatorId}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include"
-  });
+    const response = await fetch(`${BASE_URL}/subscribe/status/${creatorId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+    });
 
-  if (!response.ok) throw new Error("Failed to fetch subscription status");
-  return response.json();
+    if (!response.ok) throw new Error("Failed to fetch subscription status");
+    return response.json();
+}
+
+export async function getSubscriptionFeed() {
+    const response = await fetch(`${BASE_URL}/subscription/videos`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch subscription videos");
+    return response.json();
 }
