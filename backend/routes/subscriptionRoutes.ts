@@ -52,4 +52,39 @@ subsRouter.get('/subscribe/status/:creatorId', auth, async (req: AuthenticatedRe
     return res.status(200).json({ isSubscribed: !!subscription });
 });
 
+subsRouter.get('/subscription/videos', auth, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const subscriptions = await prisma.subscription.findMany({
+            where: { subscriberId: req.userId },
+            select: {
+                creator: {
+                    select: { id: true, channelName: true, profilePicture: true }
+                }
+            }
+        });
+
+        const channels = subscriptions.map(sub => sub.creator);
+        const creatorIds = channels.map(c => c.id);
+
+        const videos = await prisma.uploads.findMany({
+            where: {
+                userId: { in: creatorIds }
+            },
+            include: {
+                user: {
+                    select: { id: true, channelName: true, profilePicture: true }
+                }
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        });
+
+        res.status(200).json({ channels, videos });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to fetch subscription feed" });
+    }
+})
+
 export default subsRouter;
