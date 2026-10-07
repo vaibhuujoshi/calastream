@@ -8,6 +8,7 @@ import { getVideos, type WatchVideo, type WatchUser } from "../api/videos";
 import AuthModal from "../components/auth/AuthModal";
 import AuthCard from "../components/auth/AuthCard";
 import ChannelPageSkeleton from "../components/skeletons/ChannelPageSkeleton";
+import { toast } from "sonner"; // 1. Import toast
 
 export default function ChannelPage() {
     // Extract channelId using searchParams (e.g. /channel?channelId=123)
@@ -28,6 +29,7 @@ export default function ChannelPage() {
         async function loadChannelData() {
             if (!channelId) {
                 setIsLoading(false);
+                toast.error("Channel ID is missing"); // 2. Notify if route is broken
                 return;
             }
 
@@ -58,6 +60,8 @@ export default function ChannelPage() {
                 }
             } catch (error) {
                 console.error("Failed to load channel data", error);
+                // 3. Show error toast if network request fails
+                toast.error("Failed to load channel data. Please try again."); 
             } finally {
                 setIsLoading(false);
             }
@@ -65,14 +69,6 @@ export default function ChannelPage() {
 
         loadChannelData();
     }, [channelId]);
-
-    // if (isLoading) {
-    //     return (
-    //         <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-    //             <div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-    //         </div>
-    //     );
-    // }
 
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden antialiased">
