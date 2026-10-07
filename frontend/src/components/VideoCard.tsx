@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { type VideoData, formatSubscribers } from "../lib/mockData";
+import { type VideoData } from "../lib/mockData";
 import { formatDate } from "../lib/formatData";
+import { toast } from "sonner"; 
 
 interface VideoCardProps {
   video: VideoData;
@@ -8,6 +9,16 @@ interface VideoCardProps {
 
 export function VideoCard({ video }: VideoCardProps) {
   const navigate = useNavigate();
+
+  // 2. Add the quick action handler
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevents the card click from navigating to the video page
+    const videoUrl = `${window.location.origin}/watch/${video.id}`;
+    
+    navigator.clipboard.writeText(videoUrl)
+      .then(() => toast.success("Link copied to clipboard!"))
+      .catch(() => toast.error("Failed to copy link"));
+  };
 
   return (
     <div className="flex flex-col gap-3 group">
@@ -22,22 +33,28 @@ export function VideoCard({ video }: VideoCardProps) {
           alt={video.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
+        
         {/* Mock Duration Badge */}
         <span className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-1.5 py-0.5 rounded font-medium tracking-wide">
           14:20
         </span>
+
+        {/* 3. Add Quick Action Share Button (Visible on Hover) */}
+        <button
+          onClick={handleShare}
+          className="absolute top-2 right-2 cursor-pointer bg-black/80 hover:bg-black text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-white/10"
+          title="Copy link"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+        </button>
       </div>
 
       {/* Bottom Section: Avatar & Meta Data */}
       <div className="flex items-start gap-3">
 
         {/* Creator Avatar */}
-        {/* <img 
-          src={video.user.profilePicture} 
-          alt={video.user.channelName} 
-          onClick={() => navigate(`/channel/${video.user.id}`)}
-          className="w-9 h-9 rounded-full object-cover mt-1 cursor-pointer border border-[#222] hover:border-purple-500 transition-colors shrink-0"
-        /> */}
         <div
           onClick={() => navigate(`/channel/${video.user.id}`)}
           className="w-9 h-9 rounded-full overflow-hidden mt-1 cursor-pointer border border-[#222] hover:border-purple-500 transition-colors shrink-0">
