@@ -6,6 +6,7 @@ import WatchPage from "./pages/WatchPage";
 import ChannelPage from "./pages/ChannelPage";
 import { Toaster } from "sonner";
 import { SubscriptionsFeedPage } from "./pages/SubscriptionsFeedPage";
+import HistoryPage from "./pages/HistoryPage";
 
 export default function App(): React.JSX.Element {
   return (
@@ -22,7 +23,7 @@ export default function App(): React.JSX.Element {
 
             {/* Sidebar Navigation Mock Routes */}
             <Route path="/feed/subscriptions" element={<SubscriptionsFeedPage />} />
-            <Route path="/feed/history" element={<FeedPage />} />
+            <Route path="/feed/history" element={<HistoryPage />} />
             <Route path="/upload" element={<UploadPage />} />
           </Routes>
         </div>
