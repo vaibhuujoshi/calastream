@@ -1,24 +1,33 @@
 import { useNavigate } from "react-router-dom";
 import { type VideoData } from "../lib/mockData";
 import { formatDate } from "../lib/formatData";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 
 interface VideoCardProps {
   video: VideoData;
 }
 
+const getDeterministicViews = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash % 1500) + 120;
+};
+
 export function VideoCard({ video }: VideoCardProps) {
   const navigate = useNavigate();
 
-  // 2. Add the quick action handler
   const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevents the card click from navigating to the video page
+    e.stopPropagation();
     const videoUrl = `${window.location.origin}/watch/${video.id}`;
-    
+
     navigator.clipboard.writeText(videoUrl)
       .then(() => toast.success("Link copied to clipboard!"))
       .catch(() => toast.error("Failed to copy link"));
   };
+
+  const mockViews = getDeterministicViews(video.id);
 
   return (
     <div className="flex flex-col gap-3 group">
@@ -26,20 +35,20 @@ export function VideoCard({ video }: VideoCardProps) {
       {/* Top Section: Video Thumbnail */}
       <div
         onClick={() => navigate(`/watch/${video.id}`)}
-        className="w-full aspect-video bg-[#111] border border-[#1A1A1A] group-hover:border-[#333] rounded-xl overflow-hidden cursor-pointer relative transition-colors"
+        className="w-full aspect-video group bg-[#111] border border-[#1A1A1A] group-hover:border-[#444] rounded-xl overflow-hidden cursor-pointer relative transition-colors duration-200"
       >
-        <img
-          src={video.thumbnail}
-          alt={video.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        
-        {/* Mock Duration Badge */}
+        <div className="group overflow-hidden rounded-lg">
+          <img
+            src={video.thumbnail}
+            alt={video.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ease-in-out group-hover:saturate-50"
+          />
+        </div>
+
         <span className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-1.5 py-0.5 rounded font-medium tracking-wide">
           14:20
         </span>
 
-        {/* 3. Add Quick Action Share Button (Visible on Hover) */}
         <button
           onClick={handleShare}
           className="absolute top-2 right-2 cursor-pointer bg-black/80 hover:bg-black text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-white/10"
@@ -53,8 +62,6 @@ export function VideoCard({ video }: VideoCardProps) {
 
       {/* Bottom Section: Avatar & Meta Data */}
       <div className="flex items-start gap-3">
-
-        {/* Creator Avatar */}
         <div
           onClick={() => navigate(`/channel/${video.user.id}`)}
           className="w-9 h-9 rounded-full overflow-hidden mt-1 cursor-pointer border border-[#222] hover:border-purple-500 transition-colors shrink-0">
@@ -71,10 +78,7 @@ export function VideoCard({ video }: VideoCardProps) {
           )}
         </div>
 
-        {/* Video Text Details */}
         <div className="flex flex-col overflow-hidden">
-
-          {/* Title */}
           <h3
             onClick={() => navigate(`/watch/${video.id}`)}
             className="text-base font-semibold text-white leading-tight line-clamp-2 cursor-pointer group-hover:text-purple-400 transition-colors"
@@ -82,7 +86,6 @@ export function VideoCard({ video }: VideoCardProps) {
             {video.title}
           </h3>
 
-          {/* Channel Name */}
           <div
             onClick={() => navigate(`/channel/${video.user.id}`)}
             className="text-sm text-zinc-400 mt-1.5 hover:text-white cursor-pointer transition-colors"
@@ -90,16 +93,13 @@ export function VideoCard({ video }: VideoCardProps) {
             {video.user.channelName}
           </div>
 
-          {/* Stats Row */}
           <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5 font-medium">
-            <span>{Math.floor(Math.random() * 21)} views</span>
+            <span>{mockViews} views</span>
             <span className="text-[10px]">•</span>
             <span>{formatDate(video.createdAt)} ago</span>
           </div>
-
         </div>
       </div>
-
     </div>
   );
 }
