@@ -38,16 +38,22 @@ export async function getVideo(id: string): Promise<WatchVideo> {
 }
 
 // 2. Fetch All Videos (For the feed and the suggested sidebar)
-export async function getVideos(): Promise<WatchVideo[]> {
-    const response = await fetch(`${BASE_URL}/videos`, { // Adjust endpoint if your route is named differently
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-    });
+export interface PaginatedVideosResponse {
+    data: WatchVideo[];
+    nextCursor: string | null;
+}
 
-    if (!response.ok) throw new Error("Failed to fetch feed videos");
-    const data = await response.json();
-    return data.videos;
+export async function getVideos(cursor?: string | null, category?: string): Promise<PaginatedVideosResponse> {
+    const params = new URLSearchParams();
+    if (cursor) params.append("cursor", cursor);
+    if (category) params.append("category", category);
+
+    const response = await fetch(`${BASE_URL}/videos?${params.toString()}`);
+    if (!response.ok) throw new Error("Failed to fetch videos");
+    
+    // If your backend isn't updated yet and still returns an array, wrap it to prevent breaking:
+    const result = await response.json();
+    return Array.isArray(result) ? { data: result, nextCursor: null } : result;
 }
 
 export async function uploadVideo(videoUrl: string, thumbnail: string, title: string, description: string) {
