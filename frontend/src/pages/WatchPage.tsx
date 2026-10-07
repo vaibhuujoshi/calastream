@@ -11,6 +11,7 @@ import { CommentsSection } from '../components/watch/CommentSection';
 import AuthModal from '../components/auth/AuthModal';
 import AuthCard from '../components/auth/AuthCard';
 import WatchPageSkeleton from '../components/skeletons/WatchPageSkeleton';
+import { recordWatchHistory } from '../api/history';
 
 export default function WatchPage() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -40,6 +41,10 @@ export default function WatchPage() {
         // Filter currently playing asset out of recommended tracks list
         const filteredSuggestions = allVideosData.filter((v) => v.id !== videoData.id);
         setSuggested(filteredSuggestions);
+
+        recordWatchHistory(videoId).catch((error) => {
+          console.error("Silent history sync failed:", error);
+        });
 
       } catch (error) {
         console.error("Failed to load watch viewport connection stream:", error);
