@@ -89,7 +89,6 @@ export function Navbar({ onToggleSidebar, onOpenAuth }: NavbarProps) {
             <div
                 className="flex items-center gap-4 relative" ref={dropdownRef}
                 onMouseEnter={() => setIsDropdownOpen(true)}
-                onMouseLeave={() => setIsDropdownOpen(false)}
             >
                 {isLoggedIn && user ? (
                     <>
