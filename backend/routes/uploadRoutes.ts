@@ -24,10 +24,23 @@ export const S3 = new S3Client({
     responseChecksumValidation: "WHEN_REQUIRED",
 });
 
-uploadRouter.get('/videos', async (req, res) => {
+uploadRouter.get('/videos', async (req, res): Promise<any> => {
+    const cursor = req.query.cursor as string | undefined;
+    const category = req.query.category as string | undefined;
+    const limit = 16;
+    
     try {
-        // 1. Fetch raw data with aggregation count block
+        // 1. Fetch raw data with aggregation count block & pagination
         const rawVideos = await prisma.uploads.findMany({
+            take: limit + 1, // Fetch one extra to determine if there's a next page
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), // Skip the cursor itself
+            where: {
+                // Since there is no category field in schema yet, we can filter by title 
+                // containing the category (or remove this block if you don't want filtering yet)
+                ...(category && category !== "All" ? {
+                    title: { contains: category, mode: 'insensitive' } 
+                } : {})
+            },
             include: {
                 user: {
                     select: {
@@ -47,7 +60,14 @@ uploadRouter.get('/videos', async (req, res) => {
             orderBy: { createdAt: "desc" }
         });
 
-        // 2. Format loop to inject subscriberCount flatly
+        // 2. Determine if there is a next page and extract the next cursor
+        let nextCursor: string | null = null;
+        if (rawVideos.length > limit) {
+            const nextItem = rawVideos.pop(); // Remove the extra 17th item from the array
+            nextCursor = nextItem!.id; // Set its ID as the cursor for the next request
+        }
+
+        // 3. Format loop to inject subscriberCount flatly
         const formattedVideos = rawVideos.map((video) => {
             const { _count, ...userData } = video.user;
             return {
@@ -59,7 +79,11 @@ uploadRouter.get('/videos', async (req, res) => {
             };
         });
 
-        return res.json({ videos: formattedVideos });
+        // Return the formatted videos array AND the nextCursor for infinite scroll
+        return res.status(200).json({ 
+            data: formattedVideos, 
+            nextCursor: nextCursor 
+        });
 
     } catch (error) {
         console.error("Failed to fetch videos feed:", error);
