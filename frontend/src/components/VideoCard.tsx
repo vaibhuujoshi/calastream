@@ -96,7 +96,7 @@ export function VideoCard({ video }: VideoCardProps) {
           <div className="flex items-center gap-1 text-xs text-zinc-500 mt-0.5 font-medium">
             <span>{mockViews} views</span>
             <span className="text-[10px]">•</span>
-            <span>{formatDate(video.createdAt)} ago</span>
+            <span>{formatDate(video.createdAt)}</span>
           </div>
         </div>
       </div>

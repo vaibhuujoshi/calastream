@@ -1,34 +1,30 @@
 export function formatDate(dateString: string): string {
   if (!dateString) return "";
-
+  
   const postDate = new Date(dateString);
   const currentDate = new Date();
-  
   if (isNaN(postDate.getTime())) return "";
 
   const timeDifferenceMs = currentDate.getTime() - postDate.getTime();
   
+  // Handle edge cases where local clock is slightly behind post timestamp
+  if (timeDifferenceMs < 0) return "1m ago"; 
+
   const minutesAgo = Math.floor(timeDifferenceMs / 60_000);
   if (minutesAgo < 60) {
-    return `${Math.max(1, minutesAgo)}m`;
+    return `${Math.max(1, minutesAgo)}m ago`;
   }
 
   const hoursAgo = Math.floor(timeDifferenceMs / 3_600_000);
   if (hoursAgo < 24) {
-    return `${hoursAgo}h`;
+    return `${hoursAgo}h ago`;
   }
 
-  const daysAgo = Math.floor(hoursAgo / 24);
+  const daysAgo = Math.floor(timeDifferenceMs / 86_400_000);
   if (daysAgo < 7) {
-    return `${daysAgo}d`;
+    return `${daysAgo}d ago`;
   }
 
-  // Returns standard formatting like "Jun 11"
+  // Returns standard standalone formatting like "Jun 25" without "ago"
   return postDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-export function formatSubscribers(count: number): string {
-  if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
-  if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
-  return count.toString();
 }

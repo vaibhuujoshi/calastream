@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { type WatchUser } from "../../api/videos";
-import { formatSubscribers } from "../../lib/formatData";
 import { SubscribeButton } from "../SubscribeButton";
 
 interface ChannelHeaderProps {
@@ -57,7 +56,7 @@ export function ChannelHeader({ user }: ChannelHeaderProps) {
               </span>
               <span className="text-zinc-600 text-[10px]">•</span>
               <span className="text-zinc-300 tabular-nums">
-                {formatSubscribers(headerSubCount)} subscribers
+                {headerSubCount} subscribers
               </span>
             </div>
 
