@@ -5,6 +5,7 @@ import auth from "../middlewares/authMiddleware";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { redis } from "../db/redis";
+import { v2 as cloudinary } from 'cloudinary';
 
 const uploadRouter = Router();
 
@@ -206,6 +207,39 @@ uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, message: "Error generating upload URL" });
+    }
+});
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+uploadRouter.get('/cloudinary-signature', auth, async (req, res) => {
+    try {
+        const timestamp = Math.round(new Date().getTime() / 1000);
+        
+        // We define the folder here to keep your Cloudinary dashboard organized
+        const paramsToSign = {
+            timestamp: timestamp,
+            folder: 'calastream/thumbnails' 
+        };
+
+        const signature = cloudinary.utils.api_sign_request(
+            paramsToSign, 
+            process.env.CLOUDINARY_API_SECRET!
+        );
+
+        return res.status(200).json({ 
+            signature, 
+            timestamp,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            apiKey: process.env.CLOUDINARY_API_KEY
+        });
+    } catch (error) {
+        console.error("Error generating Cloudinary signature:", error);
+        return res.status(500).json({ error: "Failed to generate signature" });
     }
 });
 
