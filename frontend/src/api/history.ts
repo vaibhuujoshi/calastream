@@ -1,7 +1,7 @@
 // frontend/src/api/history.ts
 import type { WatchVideo } from "./videos";
 
-const BASE_URL = import.meta.env.BACKEND_URL;
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 export interface HistoryItem extends WatchVideo {
     historyId: string;

@@ -7,8 +7,9 @@ import ChannelPage from "./pages/ChannelPage";
 import { Toaster } from "sonner";
 import HistoryPage from "./pages/HistoryPage";
 import SubscriptionsPage from "./pages/SubscriptionsFeedPage";
-
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 export default function App(): React.JSX.Element {
+  console.log(BASE_URL)
   return (
     <>
       <BrowserRouter>

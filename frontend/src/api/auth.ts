@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.BACKEND_URL;
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 export async function SigninUser(username: string, password: string) {
   const response = await fetch(`${BASE_URL}/signin`, {
