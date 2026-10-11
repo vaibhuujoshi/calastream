@@ -10,7 +10,7 @@ export interface UserData {
   banner?: string | null;
   profilePicture?: string | null;
   subscriberCount: number;
-  description?: string;
+  description?: string | null;
 }
 
 // Upload Interface
