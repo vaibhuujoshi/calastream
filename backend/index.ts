@@ -9,7 +9,7 @@ import channelRouter from "./routes/channelRoutes";
 const app = express();
 
 app.use(cors({
-  origin: ["http://localhost:5173", "https://calastream.vercel.app/"],
+  origin: ["http://localhost:5173", "https://calastream.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
