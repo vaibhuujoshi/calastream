@@ -18,7 +18,6 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(true);
 
-    // Handle scroll arrow visibility based on scroll position
     const handleScroll = () => {
         if (!scrollContainerRef.current) return;
         const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
@@ -26,9 +25,11 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
         setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
     };
 
-    // Check initial arrow state on mount and channel load
+    // Check arrow state on mount, data load, AND window resize
     useEffect(() => {
         handleScroll();
+        window.addEventListener("resize", handleScroll);
+        return () => window.removeEventListener("resize", handleScroll);
     }, [channels]);
 
     const scroll = (direction: "left" | "right") => {
@@ -62,7 +63,6 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
 
     return (
         <div className="w-full mb-8 relative group/slider">
-            {/* Header / Label */}
             <div className="px-2 mb-4">
                 <h2 className="text-lg font-bold text-white tracking-tight">Subscriptions</h2>
             </div>
@@ -74,7 +74,7 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
                 >
                     <button 
                         onClick={() => scroll("left")}
-                        className="ml-2 pointer-events-auto p-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-white shadow-xl shadow-black/50 border border-zinc-700/50 backdrop-blur-md transform transition-all hover:scale-110 active:scale-95"
+                        className="ml-2 pointer-events-auto p-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-white shadow-xl shadow-black/50 border border-zinc-700/50 backdrop-blur-md transform transition-all hover:scale-110 active:scale-95 opacity-0 group-hover/slider:opacity-100 focus:opacity-100"
                         aria-label="Scroll left"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -96,12 +96,9 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
                             onClick={() => navigate(`/channel/${channel.id}`)}
                             className="flex flex-col items-center gap-2.5 shrink-0 cursor-pointer group/channel w-18 sm:w-22"
                         >
-                            {/* Avatar Ring Container */}
                             <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-transform duration-300 group-hover/channel:scale-105">
-                                {/* Gradient Hover Border (Hidden by default, visible on hover) */}
                                 <div className="absolute inset-0 rounded-full bg-linear-to-tr from-purple-600 to-blue-500 opacity-0 group-hover/channel:opacity-100 transition-opacity duration-300 blur-[2px] -m-0.5" />
                                 
-                                {/* Image Wrapper */}
                                 <div className="absolute inset-0 rounded-full border-[3px] border-[#050505] overflow-hidden bg-zinc-900 shadow-inner">
                                     {channel.profilePicture ? (
                                         <img 
@@ -117,7 +114,6 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
                                 </div>
                             </div>
                             
-                            {/* Truncated Channel Name */}
                             <span className="text-xs sm:text-sm font-medium text-zinc-400 group-hover/channel:text-white transition-colors truncate w-full text-center">
                                 {channel.channelName}
                             </span>
@@ -131,7 +127,7 @@ export function ChannelSlider({ channels, isLoading }: ChannelSliderProps) {
                 >
                     <button 
                         onClick={() => scroll("right")}
-                        className="mr-2 pointer-events-auto p-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-white shadow-xl shadow-black/50 border border-zinc-700/50 backdrop-blur-md transform transition-all hover:scale-110 active:scale-95 opacity-0 group-hover/slider:opacity-100"
+                        className="mr-2 pointer-events-auto p-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-white shadow-xl shadow-black/50 border border-zinc-700/50 backdrop-blur-md transform transition-all hover:scale-110 active:scale-95 opacity-0 group-hover/slider:opacity-100 focus:opacity-100"
                         aria-label="Scroll right"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

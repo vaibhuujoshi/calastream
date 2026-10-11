@@ -1,88 +1,63 @@
-interface ChannelPageSkeletonProps {
-  isSidebarCollapsed: boolean;
-}
+// frontend/src/components/skeletons/ChannelPageSkeleton.tsx
 
-export default function ChannelPageSkeleton({ isSidebarCollapsed }: ChannelPageSkeletonProps) {
-  return (
-    <div 
-      className={`flex-1 p-4 md:p-6 lg:p-8 transition-all duration-300 w-full animate-pulse ${
-        isSidebarCollapsed ? "sm:ml-20" : "sm:ml-60"
-      }`}
-    >
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        
-        {/* 1. Channel Header Skeleton Layout */}
-        <div className="flex flex-col w-full">
-          {/* Banner Block Placeholder */}
-          <div className="w-full h-32 sm:h-48 lg:h-60 bg-[#121212] border border-[#1A1A1A] rounded-2xl" />
-
-          {/* Identity Context & Button Row */}
-          <div className="flex flex-col md:flex-row items-start md:items-center px-4 md:px-8 gap-4 md:gap-6 relative mt-4">
+export default function ChannelPageSkeleton() {
+    return (
+        <div className="w-full animate-pulse pt-4 md:pt-6">
             
-            {/* Round Avatar Mask Frame */}
-            <div className="w-24 h-24 md:w-36 md:h-36 rounded-full border-4 border-[#050505] bg-[#121212] -mt-12 md:-mt-16 shrink-0 relative z-10" />
+            {/* 1. Banner Skeleton */}
+            <div className="w-full h-32 sm:h-48 md:h-64 lg:h-80 bg-zinc-800/40 rounded-2xl mb-6 md:mb-8" />
 
-            {/* Profile Fields & Call to Actions Container */}
-            <div className="flex flex-col md:flex-row md:items-start justify-between w-full gap-4 mt-2">
-              <div className="flex flex-col space-y-3 w-full max-w-xl">
-                {/* Channel Name Line */}
-                <div className="h-7 bg-[#121212] rounded-lg w-1/2" />
-                
-                {/* Meta Handle / Subscriber Counts Strip */}
-                <div className="h-4 bg-[#121212] rounded-md w-1/3" />
-                
-                {/* Bio Description Segment Block Lines */}
-                <div className="space-y-2 pt-2">
-                  <div className="h-3.5 bg-[#121212] rounded-md w-full" />
-                  <div className="h-3.5 bg-[#121212] rounded-md w-5/6" />
+            {/* 2. Profile Header Skeleton */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8 px-4 sm:px-0">
+                {/* Avatar */}
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-zinc-800/40 shrink-0" />
+
+                {/* Info Container */}
+                <div className="flex flex-col items-center sm:items-start w-full max-w-3xl gap-3 text-center sm:text-left">
+                    {/* Channel Name */}
+                    <div className="h-8 w-48 bg-zinc-800/40 rounded-lg" />
+                    
+                    {/* Handle & Sub Count */}
+                    <div className="h-4 w-64 bg-zinc-800/40 rounded-md" />
+                    
+                    {/* Description (Hidden on very small screens to match typical behavior) */}
+                    <div className="hidden sm:flex flex-col gap-2 w-full mt-2">
+                        <div className="h-3.5 w-full bg-zinc-800/40 rounded-md" />
+                        <div className="h-3.5 w-4/5 bg-zinc-800/40 rounded-md" />
+                    </div>
+                    
+                    {/* Subscribe Button */}
+                    <div className="h-10 w-32 bg-zinc-800/40 rounded-full mt-3" />
                 </div>
-              </div>
-
-              {/* Action Subscribe Pill Button Silhouette */}
-              <div className="w-28 h-10 bg-[#121212] rounded-full shrink-0 mt-2 md:mt-0" />
             </div>
 
-          </div>
+            {/* 3. Uploads Section Header */}
+            <div className="border-t border-[#1A1A1A] pt-6 mb-6">
+                <div className="h-6 w-24 bg-zinc-800/40 rounded-lg mb-6" />
+            </div>
 
-          {/* Decorative Divider Line */}
-          <div className="w-full h-px bg-[#1A1A1A] mt-8" />
+            {/* 4. Video Grid Skeleton (Matches exact breakpoints of the real Feed) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-10">
+                {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="flex flex-col gap-3">
+                        {/* Thumbnail */}
+                        <div className="w-full aspect-video bg-zinc-800/40 rounded-xl" />
+                        
+                        {/* Video Meta */}
+                        <div className="flex gap-3 px-1">
+                            {/* Uploader Avatar */}
+                            <div className="w-9 h-9 rounded-full bg-zinc-800/40 shrink-0 mt-0.5" />
+                            
+                            {/* Title & Stats */}
+                            <div className="flex flex-col gap-2.5 w-full pt-1">
+                                <div className="h-4 w-[90%] bg-zinc-800/40 rounded-md" />
+                                <div className="h-3 w-[60%] bg-zinc-800/40 rounded-md" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            
         </div>
-
-        {/* 2. Uploads Grid Section Skeleton Layout */}
-        <div className="mt-4">
-          {/* Grid Heading Token */}
-          <div className="h-5 bg-[#121212] rounded-md w-24 mb-6" />
-
-          {/* Responsive Cards Video Grid Mapping Mocking 6 Items */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-x-4 gap-y-10 mx-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`video-skel-${i}`} className="flex flex-col gap-3 w-full">
-                
-                {/* Aspect-Video Media Thumbnail Screen Card */}
-                <div className="w-full aspect-video bg-[#121212] border border-[#1A1A1A] rounded-xl" />
-
-                {/* Card Info Meta Block */}
-                <div className="flex gap-3 items-start w-full">
-                  {/* Round Creator Avatar Placeholder */}
-                  <div className="w-9 h-9 rounded-full bg-[#121212] shrink-0" />
-                  
-                  {/* Text Details Wrapper */}
-                  <div className="flex flex-col space-y-2 w-full pt-1">
-                    {/* Header Title Line 1 */}
-                    <div className="h-4 bg-[#121212] rounded-md w-11/12" />
-                    {/* Header Title Line 2 */}
-                    <div className="h-4 bg-[#121212] rounded-md w-2/3" />
-                    {/* Channel Metadata Row Line */}
-                    <div className="h-3 bg-[#121212] rounded-md w-1/2 mt-2" />
-                  </div>
-                </div>
-
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
+    );
 }

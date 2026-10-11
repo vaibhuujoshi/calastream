@@ -67,3 +67,21 @@ export async function uploadVideo(videoUrl: string, thumbnail: string, title: st
     const data = await response.json();
     return data;
 }
+
+export async function getChannelInfo(channelId: string): Promise<WatchUser> {
+    const response = await fetch(`${BASE_URL}/channel/${channelId}`);
+    if (!response.ok) throw new Error("Failed to fetch channel info");
+    return await response.json();
+}
+
+export async function getChannelVideos(channelId: string, cursor?: string | null): Promise<PaginatedVideosResponse> {
+    const params = new URLSearchParams();
+    if (cursor) params.append("cursor", cursor);
+
+    // FIXED: Changed from `${BASE_URL}/${channelId}/channel/videos`
+    const response = await fetch(`${BASE_URL}/channel/${channelId}/videos?${params.toString()}`);
+    
+    if (!response.ok) throw new Error("Failed to fetch channel videos");
+    
+    return await response.json();
+}
