@@ -4,6 +4,7 @@ import { uploadSchema } from "../validators/uploadValidators";
 import auth from "../middlewares/authMiddleware";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { redis } from "../db/redis";
 
 const uploadRouter = Router();
 
@@ -28,18 +29,24 @@ uploadRouter.get('/videos', async (req, res): Promise<any> => {
     const cursor = req.query.cursor as string | undefined;
     const category = req.query.category as string | undefined;
     const limit = 16;
-    
+
     try {
-        // 1. Fetch raw data with aggregation count block & pagination
+        const activeCategory = category || 'All';
+        const cacheKey = `feed:videos:${activeCategory}:${cursor || 'initial'}`;
+        
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+            console.log(`[Cache Hit] Serving from Redis: ${cacheKey}`);
+            return res.status(200).json(cachedData);
+        }
+
+        console.log(`[Cache Miss] Querying Database: ${cacheKey}`);
+
         const rawVideos = await prisma.uploads.findMany({
-            take: limit + 1, // Fetch one extra to determine if there's a next page
-            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), // Skip the cursor itself
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             where: {
-                // Since there is no category field in schema yet, we can filter by title 
-                // containing the category (or remove this block if you don't want filtering yet)
-                ...(category && category !== "All" ? {
-                    title: { contains: category, mode: 'insensitive' } 
-                } : {})
+                ...(activeCategory !== "All" ? { title: { contains: activeCategory, mode: 'insensitive' } } : {})
             },
             include: {
                 user: {
@@ -51,23 +58,19 @@ uploadRouter.get('/videos', async (req, res): Promise<any> => {
                         banner: true,
                         username: true,
                         description: true,
-                        _count: {
-                            select: { subscribers: true }
-                        }
+                        _count: { select: { subscribers: true } }
                     }
                 }
             },
             orderBy: { createdAt: "desc" }
         });
 
-        // 2. Determine if there is a next page and extract the next cursor
         let nextCursor: string | null = null;
         if (rawVideos.length > limit) {
-            const nextItem = rawVideos.pop(); // Remove the extra 17th item from the array
-            nextCursor = nextItem!.id; // Set its ID as the cursor for the next request
+            const nextItem = rawVideos.pop();
+            nextCursor = nextItem!.id;
         }
 
-        // 3. Format loop to inject subscriberCount flatly
         const formattedVideos = rawVideos.map((video) => {
             const { _count, ...userData } = video.user;
             return {
@@ -79,12 +82,11 @@ uploadRouter.get('/videos', async (req, res): Promise<any> => {
             };
         });
 
-        // Return the formatted videos array AND the nextCursor for infinite scroll
-        return res.status(200).json({ 
-            data: formattedVideos, 
-            nextCursor: nextCursor 
-        });
+        const responsePayload = { data: formattedVideos, nextCursor: nextCursor };
 
+        await redis.set(cacheKey, responsePayload, { ex: 300 });
+
+        return res.status(200).json(responsePayload);
     } catch (error) {
         console.error("Failed to fetch videos feed:", error);
         return res.status(500).json({ error: "Failed to fetch videos" });
@@ -93,9 +95,20 @@ uploadRouter.get('/videos', async (req, res): Promise<any> => {
 
 uploadRouter.get('/video/:id', async (req, res) => {
     try {
-        // 1. Updated to match the /videos aggregation structure exactly
+        const videoId = req.params.id;
+        const cacheKey = `video:details:${videoId}`;
+
+        const cachedVideo = await redis.get(cacheKey);
+
+        if (cachedVideo) {
+            console.log(`[Cache Hit] Serving Single Video: ${cacheKey}`);
+            return res.status(200).json({ video: cachedVideo });
+        }
+
+        console.log(`[Cache Miss] Querying Database: ${cacheKey}`);
+
         const rawVideo = await prisma.uploads.findFirst({
-            where: { id: req.params.id },
+            where: { id: videoId },
             include: {
                 user: {
                     select: {
@@ -118,7 +131,6 @@ uploadRouter.get('/video/:id', async (req, res) => {
             return res.status(404).json({ error: "Video not found" });
         }
 
-        // 2. Format the single video payload identically to the map loop above
         const { _count, ...userData } = rawVideo.user;
         const formattedVideo = {
             ...rawVideo,
@@ -128,7 +140,6 @@ uploadRouter.get('/video/:id', async (req, res) => {
             }
         };
 
-        // 3. Generate S3/B2 file delivery access URL signature
         const getCommand = new GetObjectCommand({
             Bucket: B2_BUCKET_NAME,
             Key: formattedVideo.videoUrl
@@ -139,6 +150,8 @@ uploadRouter.get('/video/:id', async (req, res) => {
         if (formattedVideo.videoUrl.startsWith("videos/")) {
             formattedVideo.videoUrl = getUrl;
         }
+
+        await redis.set(cacheKey, formattedVideo, { ex: 300 });
 
         return res.json({ video: formattedVideo });
 
@@ -156,11 +169,20 @@ uploadRouter.post('/video', auth, async (req, res) => {
 
     const { videoUrl, thumbnail, title, description } = parsed.data;
 
-    const video = await prisma.uploads.create({
-        data: { videoUrl, thumbnail, title, description, userId }
-    });
+    try {
+        const video = await prisma.uploads.create({
+            data: { videoUrl, thumbnail, title, description, userId }
+        });
 
-    res.status(201).json({ video });
+        await redis.del('feed:videos:All:initial');
+        
+        await redis.del(`channel:videos:${userId}:initial`);
+
+        res.status(201).json({ video });
+    } catch (error) {
+        console.error("Video Upload Error:", error);
+        return res.status(500).json({ error: "Failed to save video" });
+    }
 });
 
 uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {

@@ -2,6 +2,7 @@
 import { Router, type Request, type Response } from "express";
 import auth from "../middlewares/authMiddleware";
 import { prisma } from "../db/db";
+import { redis } from "../db/redis";
 
 const historyRouter = Router();
 
@@ -9,16 +10,26 @@ interface AuthenticatedRequest extends Request {
     userId?: string;
 }
 
-// 1. Fetch Watch History with Cursor Pagination
+// 1. Fetch Watch History with Caching
 historyRouter.get("/history", auth, async (req: AuthenticatedRequest, res: Response): Promise<any> => {
     const cursor = req.query.cursor as string | undefined;
     const limit = 20;
 
     try {
+        const cacheKey = `history:${req.userId}:${cursor || 'initial'}`;
+
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+            console.log(`[Cache Hit] Serving History for user ${req.userId}`);
+            return res.status(200).json(cachedData);
+        }
+
+        console.log(`[Cache Miss] Fetching History from DB for user ${req.userId}`);
+
         const history = await prisma.watchHistory.findMany({
             where: { userId: req.userId },
-            take: limit + 1, // Fetch one extra to check if there is a next page
-            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), // Skip the cursor itself
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             orderBy: { watchedAt: "desc" },
             include: {
                 video: { include: { user: true } }
@@ -27,25 +38,41 @@ historyRouter.get("/history", auth, async (req: AuthenticatedRequest, res: Respo
 
         let nextCursor: string | null = null;
         if (history.length > limit) {
-            const nextItem = history.pop(); // Remove the extra item from the result array
-            nextCursor = nextItem!.id; // Use its ID as the cursor for the next fetch
+            const nextItem = history.pop();
+            nextCursor = nextItem!.id;
         }
 
-        // Merge history metadata (watchedAt, historyId) with the video data
         const formattedData = history.map(h => ({
             historyId: h.id,
             watchedAt: h.watchedAt,
             ...h.video
         }));
 
-        return res.status(200).json({ data: formattedData, nextCursor });
+        const responsePayload = { data: formattedData, nextCursor };
+
+        await redis.set(cacheKey, responsePayload, { ex: 300 });
+
+        return res.status(200).json(responsePayload);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Failed to fetch history" });
     }
 });
 
-// 2. Clear Specific History Item
+// 2. Clear ALL History 
+historyRouter.delete("/history/clear", auth, async (req: AuthenticatedRequest, res: Response): Promise<any> => {
+    try {
+        await prisma.watchHistory.deleteMany({ where: { userId: req.userId } });
+        
+        await redis.del(`history:${req.userId}:initial`);
+
+        return res.status(200).json({ message: "History cleared" });
+    } catch (error) {
+        return res.status(500).json({ error: "Failed to clear history" });
+    }
+});
+
+// 3. Clear Specific History Item
 historyRouter.delete("/history/:videoId", auth, async (req: AuthenticatedRequest, res: Response): Promise<any> => {
     try {
         await prisma.watchHistory.delete({
@@ -57,6 +84,8 @@ historyRouter.delete("/history/:videoId", auth, async (req: AuthenticatedRequest
             }
         });
         
+        await redis.del(`history:${req.userId}:initial`);
+
         return res.status(200).json({ message: "Item removed from history" });
     } catch (error) {
         console.error(error);
@@ -64,17 +93,7 @@ historyRouter.delete("/history/:videoId", auth, async (req: AuthenticatedRequest
     }
 });
 
-// 3. Clear ALL History (Keep your existing route)
-historyRouter.delete("/history/clear", auth, async (req: AuthenticatedRequest, res: Response): Promise<any> => {
-    try {
-        await prisma.watchHistory.deleteMany({ where: { userId: req.userId } });
-        return res.status(200).json({ message: "History cleared" });
-    } catch (error) {
-        return res.status(500).json({ error: "Failed to clear history" });
-    }
-});
-
-// 4. Update History (Keep your existing POST route)
+// 4. Update History
 historyRouter.post("/history", auth, async (req: AuthenticatedRequest, res: Response): Promise<any> => {
     const { videoId } = req.body;
 
@@ -83,8 +102,6 @@ historyRouter.post("/history", auth, async (req: AuthenticatedRequest, res: Resp
     }
 
     try {
-        // Using upsert because of the @@unique([userId, videoId]) constraint in your schema.
-        // If they watch it again, it just updates the timestamp to 'now()'.
         await prisma.watchHistory.upsert({
             where: {
                 userId_videoId: {
@@ -92,14 +109,11 @@ historyRouter.post("/history", auth, async (req: AuthenticatedRequest, res: Resp
                     videoId: videoId
                 }
             },
-            update: {
-                watchedAt: new Date()
-            },
-            create: {
-                userId: req.userId!,
-                videoId: videoId
-            }
+            update: { watchedAt: new Date() },
+            create: { userId: req.userId!, videoId: videoId }
         });
+
+        await redis.del(`history:${req.userId}:initial`);
 
         return res.status(200).json({ message: "History updated" });
     } catch (error) {
