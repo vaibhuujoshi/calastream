@@ -7,7 +7,7 @@ import ThumbnailUploader from "../components/upload/ThumbnailUploader";
 import { FormInput } from "../components/upload/FormInput";
 import { FormTextarea } from "../components/upload/FormTextarea";
 
-const BASE_URL = "http://localhost:3000/api/v1";
+const BASE_URL = import.meta.env.BACKEND_URL;
 
 export default function UploadPage() {
   const navigate = useNavigate();

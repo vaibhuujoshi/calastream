@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { SuggestedVideos } from '../components/watch/SuggestedVideo';
@@ -17,7 +17,6 @@ import { recordWatchHistory } from '../api/history';
 
 export default function WatchPage() {
   const { videoId } = useParams<{ videoId: string }>();
-  const navigate = useNavigate();
 
   const [video, setVideo] = useState<WatchVideo | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);

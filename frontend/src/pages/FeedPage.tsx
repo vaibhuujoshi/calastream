@@ -20,8 +20,6 @@ export function FeedPage() {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-    const user = useUserStore((state) => state.user);
-    const isLoggedIn = useUserStore((state) => state.isLoggedIn);
     const isInitializing = useUserStore((state) => state.isInitializing);
     const setUser = useUserStore((state) => state.setUser);
     const setInitializing = useUserStore((state) => state.setInitializing);

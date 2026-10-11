@@ -1,5 +1,5 @@
 // frontend/src/components/feed/CategoryChips.tsx
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 
 const CATEGORIES = [
     "All", "Gaming", "Music", "Live", "Web Development", 

@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:3000/api/v1";
+const BASE_URL = import.meta.env.BACKEND_URL;
 
 export async function uploadThumbnail(file: File): Promise<string> {
     // 1. Get the signature from your backend

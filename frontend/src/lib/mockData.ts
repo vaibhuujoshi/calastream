@@ -7,7 +7,7 @@ export interface UserData {
   username: string;
   channelName: string;
   gender: Gender;
-  banner?: string;
+  banner?: string | null;
   profilePicture?: string;
   subscriberCount: number;
   description?: string;

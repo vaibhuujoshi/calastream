@@ -22,7 +22,7 @@ export function VideoDropzone({
 
   // Simulated progress bar for better perceived UX
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setTimeout>;
     if (isUploading && uploadStatus === 'uploading') {
       interval = setInterval(() => {
         setProgress(p => (p < 90 ? p + (Math.random() * 5) : p));

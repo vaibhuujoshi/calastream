@@ -35,7 +35,7 @@ export default function HistoryPage() {
 
     // 2. Debounced Resize Listener
     useEffect(() => {
-        let timeoutId: NodeJS.Timeout;
+        let timeoutId: ReturnType<typeof setTimeout>;
         const handleResize = () => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {

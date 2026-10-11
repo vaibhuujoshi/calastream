@@ -1,16 +1,16 @@
-const BASE_URL = "http://localhost:3000/api/v1";
+const BASE_URL = import.meta.env.BACKEND_URL;
 
 export type Gender = 'MALE' | 'FEMALE' | 'OTHERS';
 
 export interface WatchUser {
-  id: string;
-  username: string;
-  channelName: string;
-  gender: Gender;
-  banner: string | null;
-  profilePicture: string | null;
-  subscriberCount: number;
-  description: string | null;
+    id: string;
+    username: string;
+    channelName: string;
+    gender: Gender;
+    banner: string | null;
+    profilePicture: string | null;
+    subscriberCount: number;
+    description: string | null;
 }
 
 export interface WatchVideo {
@@ -22,6 +22,8 @@ export interface WatchVideo {
     createdAt: string;
     user: WatchUser;
     viewCount?: number;
+    isLiked?: boolean;
+    isDisliked?: boolean;
 }
 
 // 1. Fetch Single Video (For the main player)
@@ -50,7 +52,7 @@ export async function getVideos(cursor?: string | null, category?: string): Prom
 
     const response = await fetch(`${BASE_URL}/videos?${params.toString()}`);
     if (!response.ok) throw new Error("Failed to fetch videos");
-    
+
     // If your backend isn't updated yet and still returns an array, wrap it to prevent breaking:
     const result = await response.json();
     return Array.isArray(result) ? { data: result, nextCursor: null } : result;
@@ -80,8 +82,8 @@ export async function getChannelVideos(channelId: string, cursor?: string | null
 
     // FIXED: Changed from `${BASE_URL}/${channelId}/channel/videos`
     const response = await fetch(`${BASE_URL}/channel/${channelId}/videos?${params.toString()}`);
-    
+
     if (!response.ok) throw new Error("Failed to fetch channel videos");
-    
+
     return await response.json();
 }

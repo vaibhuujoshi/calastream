@@ -24,7 +24,6 @@ export default function SubscriptionsPage() {
     const [nextCursor, setNextCursor] = useState<string | null>(null);
 
     // Global Auth Store
-    const user = useUserStore((state) => state.user);
     const isLoggedIn = useUserStore((state) => state.isLoggedIn);
     const isInitializing = useUserStore((state) => state.isInitializing);
     const setUser = useUserStore((state) => state.setUser);
@@ -110,7 +109,7 @@ export default function SubscriptionsPage() {
 
     // 4. Debounced Resize Listener
     useEffect(() => {
-        let timeoutId: NodeJS.Timeout;
+        let timeoutId: ReturnType<typeof setTimeout>;
         const handleResize = () => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
@@ -179,7 +178,7 @@ export default function SubscriptionsPage() {
                                         <ChannelSlider isLoading={isLoading} channels={channels} />
                                         
                                         {/* Subtle dividing line to separate the horizontal slider from the vertical feed */}
-                                        <div className="w-full h-[1px] bg-zinc-800/60 mb-6 -mt-2"></div>
+                                        <div className="w-full h-px bg-zinc-800/60 mb-6 -mt-2"></div>
                                     </div>
                                 )}
 
