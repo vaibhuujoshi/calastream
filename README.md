@@ -1,8 +1,10 @@
 # Calastream
 **A High-Performance, Decoupled Video Streaming Platform**
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-Available-purple.svg)](#) <!-- Add your Vercel link here -->
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Available-purple.svg)](https://calastream.vercel.app) <!-- Add your Vercel link here --> 
 [![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL%20%7C%20Redis-black)](#)
+
+
 
 Calastream is a full-stack video streaming and sharing platform designed with industry-standard patterns for media ingestion, processing, and delivery. Built to handle heavy media payloads without blocking the main API thread, it features a decoupled architecture, secure direct-to-cloud uploads, and robust caching.
 
