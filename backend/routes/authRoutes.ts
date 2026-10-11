@@ -51,7 +51,7 @@ userRouter.post('/signin', async (req: Request, res: Response) => {
 
   res.cookie("token", token, {
     httpOnly: true,
-    secure: false,
+    secure: true,
     sameSite: "none", //fix cross site issue
     maxAge: 60 * 60 * 1000
   })
