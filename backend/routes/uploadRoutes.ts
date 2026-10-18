@@ -2,29 +2,17 @@ import { Router } from "express";
 import { prisma } from "../db/db";
 import { uploadSchema } from "../validators/uploadValidators";
 import auth from "../middlewares/authMiddleware";
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { redis } from "../db/redis";
 import { v2 as cloudinary } from 'cloudinary';
+import { randomUUID } from "bullmq";
+import { videoQueue } from "../queues/videoQueue";
+import { S3 } from "../config/b2";
 
 const uploadRouter = Router();
 
-const B2_ENDPOINT = process.env.B2_ENDPOINT;
-const B2_REGION = process.env.B2_REGION;
-const B2_KEY_ID = process.env.B2_KEY_ID!;
-const B2_APPLICATION_KEY = process.env.B2_APPLICATION_KEY!;
 const B2_BUCKET_NAME = process.env.B2_BUCKET_NAME;
-
-export const S3 = new S3Client({
-    endpoint: B2_ENDPOINT,
-    region: B2_REGION,
-    credentials: {
-        accessKeyId: B2_KEY_ID,
-        secretAccessKey: B2_APPLICATION_KEY,
-    },
-    requestChecksumCalculation: "WHEN_REQUIRED",
-    responseChecksumValidation: "WHEN_REQUIRED",
-});
 
 uploadRouter.get('/videos', async (req, res): Promise<any> => {
     const cursor = req.query.cursor as string | undefined;
@@ -34,7 +22,7 @@ uploadRouter.get('/videos', async (req, res): Promise<any> => {
     try {
         const activeCategory = category || 'All';
         const cacheKey = `feed:videos:${activeCategory}:${cursor || 'initial'}`;
-        
+
         const cachedData = await redis.get(cacheKey);
         if (cachedData) {
             console.log(`[Cache Hit] Serving from Redis: ${cacheKey}`);
@@ -171,24 +159,72 @@ uploadRouter.post('/video', auth, async (req, res) => {
     const { videoUrl, thumbnail, title, description } = parsed.data;
 
     try {
+        await S3.send(
+            new HeadObjectCommand({
+                Bucket: B2_BUCKET_NAME,
+                Key: videoUrl
+            })
+        );
+
         const video = await prisma.uploads.create({
-            data: { videoUrl, thumbnail, title, description, userId }
+            data: {
+                videoUrl,
+                thumbnail,
+                title,
+                description,
+                userId,
+                status: "PROCESSING"
+            }
         });
 
-        await redis.del('feed:videos:All:initial');
-        
-        await redis.del(`channel:videos:${userId}:initial`);
+        try {
+            await videoQueue.add(
+                "process-video",
+                {
+                    videoId: video.id,
+                    sourceKey: video.videoUrl
+                },
+                {
+                    jobId: video.id,
+                    attempts: 3,
+                    backoff: {
+                        type: "exponential",
+                        delay: 5000
+                    }
+                }
+            );
+        } catch (queueError) {
+            console.error("Failed to enqueue video:", queueError);
 
-        res.status(201).json({ video });
+            await prisma.uploads.update({
+                where: { id: video.id },
+                data: { status: "FAILED" }
+            });
+
+            return res.status(503).json({
+                error: "Video saved, but processing could not be scheduled",
+                videoId: video.id
+            });
+        }
+
+        await Promise.all([
+            redis.del("feed:videos:All:initial"),
+            redis.del(`channel:videos:${userId}:initial`)
+        ]);
+
+        return res.status(201).json({
+            video,
+            processingStatus: "PROCESSING"
+        });
     } catch (error) {
         console.error("Video Upload Error:", error);
-        return res.status(500).json({ error: "Failed to save video" });
+        return res.status(500).json({ error: "Failed to save or verify video" });
     }
 });
 
-uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {
+uploadRouter.post("/getPresignedUploadUrl", auth, async (req, res) => {
     try {
-        const uniqueKey = `videos/${Date.now()}.mp4`;
+        const uniqueKey = `videos/${randomUUID()}.mp4`;
 
         const putCommand = new PutObjectCommand({
             Bucket: B2_BUCKET_NAME,
@@ -196,17 +232,23 @@ uploadRouter.post('/getPresignedUploadUrl', async (req, res) => {
             ContentType: "video/mp4",
         });
 
-        const putUrl = await getSignedUrl(S3, putCommand, { expiresIn: 900, signableHeaders: new Set(["host"]) });
+        const putUrl = await getSignedUrl(S3, putCommand, {
+            expiresIn: 900,
+            signableHeaders: new Set(["host"]),
+        });
 
         return res.status(200).json({
             success: true,
-            putUrl: putUrl,
-            videoPath: uniqueKey
+            putUrl,
+            videoPath: uniqueKey,
         });
-
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ success: false, message: "Error generating upload URL" });
+        console.error("Presigned URL error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Error generating upload URL",
+        });
     }
 });
 
@@ -219,20 +261,20 @@ cloudinary.config({
 uploadRouter.get('/cloudinary-signature', auth, async (req, res) => {
     try {
         const timestamp = Math.round(new Date().getTime() / 1000);
-        
+
         // We define the folder here to keep your Cloudinary dashboard organized
         const paramsToSign = {
             timestamp: timestamp,
-            folder: 'calastream/thumbnails' 
+            folder: 'calastream/thumbnails'
         };
 
         const signature = cloudinary.utils.api_sign_request(
-            paramsToSign, 
+            paramsToSign,
             process.env.CLOUDINARY_API_SECRET!
         );
 
-        return res.status(200).json({ 
-            signature, 
+        return res.status(200).json({
+            signature,
             timestamp,
             cloudName: process.env.CLOUDINARY_CLOUD_NAME,
             apiKey: process.env.CLOUDINARY_API_KEY
