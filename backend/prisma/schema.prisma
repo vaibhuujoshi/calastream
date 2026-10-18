@@ -27,18 +27,21 @@ model User {
   likes          Likes[]
   comments       Comments[]
   watchHistories WatchHistory[]
-  subscriptions   Subscription[] @relation("UserSubscribers")
-  subscribers     Subscription[] @relation("UserSubscriptions")
+  subscriptions  Subscription[] @relation("UserSubscribers")
+  subscribers    Subscription[] @relation("UserSubscriptions")
 }
 
 model Uploads {
-  id             String         @id @default(uuid())
-  videoUrl       String
-  thumbnail      String
-  description    String
-  title          String
-  userId         String
-  user           User           @relation(fields: [userId], references: [id])
+  id          String      @id @default(uuid())
+  videoUrl    String
+  thumbnail   String
+  description String
+  title       String
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  status      VideoStatus @default(PROCESSING)
+  hlsMasterKey String?
+
   createdAt      DateTime       @default(now())
   likes          Likes[]
   comments       Comments[]
@@ -93,4 +96,10 @@ enum Gender {
   Male
   Female
   Other
+}
+
+enum VideoStatus {
+  PROCESSING
+  PUBLISHED
+  FAILED
 }
