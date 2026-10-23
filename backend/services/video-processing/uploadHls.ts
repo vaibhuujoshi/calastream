@@ -5,7 +5,6 @@ import { join, relative, sep, posix } from "node:path";
 
 import { S3, B2_BUCKET_NAME } from "../../config/b2";
 
-
 type UploadHlsOptions = {
     outputDirectory: string;
     videoId: string;
@@ -17,19 +16,37 @@ type LocalFile = {
     relativePath: string;
 };
 
-async function collectFiles(directory: string): Promise<LocalFile[]> {
+/**
+ * Recursively collects all files while preserving paths
+ * relative to the original HLS output directory.
+ */
+async function collectFiles(
+    rootDirectory: string,
+    currentDirectory: string = rootDirectory,
+): Promise<LocalFile[]> {
     const files: LocalFile[] = [];
-    const entries = await readdir(directory, { withFileTypes: true });
+
+    const entries = await readdir(currentDirectory, {
+        withFileTypes: true,
+    });
 
     for (const entry of entries) {
-        const fullPath = join(directory, entry.name);
+        const fullPath = join(currentDirectory, entry.name);
 
         if (entry.isDirectory()) {
-            files.push(...await collectFiles(fullPath));
+            const nestedFiles = await collectFiles(
+                rootDirectory,
+                fullPath,
+            );
+
+            files.push(...nestedFiles);
         } else if (entry.isFile()) {
             files.push({
                 path: fullPath,
-                relativePath: relative(directory, fullPath)
+                relativePath: relative(
+                    rootDirectory,
+                    fullPath,
+                )
                     .split(sep)
                     .join("/"),
             });
@@ -39,6 +56,9 @@ async function collectFiles(directory: string): Promise<LocalFile[]> {
     return files;
 }
 
+/**
+ * Returns the correct MIME type for HLS files.
+ */
 function getContentType(filePath: string): string {
     if (filePath.endsWith(".m3u8")) {
         return "application/vnd.apple.mpegurl";
@@ -48,7 +68,9 @@ function getContentType(filePath: string): string {
         return "video/mp2t";
     }
 
-    throw new Error(`Unsupported HLS file type: ${filePath}`);
+    throw new Error(
+        `Unsupported HLS file type: ${filePath}`,
+    );
 }
 
 export async function uploadHls({
@@ -56,32 +78,96 @@ export async function uploadHls({
     videoId,
     concurrency = 4,
 }: UploadHlsOptions): Promise<string> {
+    // Validate video ID before constructing object keys.
     if (!/^[a-zA-Z0-9_-]+$/.test(videoId)) {
-        throw new Error("Invalid video ID for HLS storage");
+        throw new Error(
+            "Invalid video ID for HLS storage",
+        );
     }
 
-    if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 16) {
-        throw new Error("Concurrency must be an integer between 1 and 16");
+    if (
+        !Number.isInteger(concurrency) ||
+        concurrency < 1 ||
+        concurrency > 16
+    ) {
+        throw new Error(
+            "Concurrency must be an integer between 1 and 16",
+        );
     }
 
-    const files = await collectFiles(outputDirectory);
-
-    const masterPlaylistExists = files.some(
-        (file) => file.relativePath === "master.m3u8"
+    console.log("[HLS Upload] Bucket:", B2_BUCKET_NAME);
+    console.log("[HLS Upload] Video ID:", videoId);
+    console.log(
+        "[HLS Upload] Output directory:",
+        outputDirectory,
     );
 
-    if (!masterPlaylistExists) {
-        throw new Error("Master playlist is missing from HLS output");
-    }
+    // Collect files with paths relative to outputDirectory.
+    const files = await collectFiles(outputDirectory);
+
+    console.log(
+        "[HLS Upload] Total files collected:",
+        files.length,
+    );
+
+    console.log(
+        "[HLS Upload] Collected files:",
+        files.map((file) => ({
+            relativePath: file.relativePath,
+            localPath: file.path,
+        })),
+    );
 
     if (files.length === 0) {
-        throw new Error("No HLS files found to upload");
+        throw new Error(
+            "No HLS files found to upload",
+        );
     }
 
-    const prefix = `hls/${videoId}`;
-    let nextIndex = 0;
+    const availablePaths = new Set(
+        files.map((file) => file.relativePath),
+    );
 
-    // Each worker uploads one file at a time.
+    // Validate master playlist.
+    if (!availablePaths.has("master.m3u8")) {
+        throw new Error(
+            "Master playlist is missing from HLS output",
+        );
+    }
+
+    // Validate every rendition playlist.
+    const requiredPlaylists = [
+        "1080p/index.m3u8",
+        "720p/index.m3u8",
+        "480p/index.m3u8",
+    ];
+
+    const missingPlaylists = requiredPlaylists.filter(
+        (path) => !availablePaths.has(path),
+    );
+
+    if (missingPlaylists.length > 0) {
+        throw new Error(
+            `Missing rendition playlists: ${missingPlaylists.join(", ")}`,
+        );
+    }
+
+    // Reject unexpected files instead of uploading them silently.
+    for (const file of files) {
+        getContentType(file.relativePath);
+    }
+
+    const prefix = posix.join("hls", videoId);
+
+    console.log("[HLS Upload] Destination prefix:", prefix);
+
+    let nextIndex = 0;
+    let uploadedCount = 0;
+
+    /**
+     * Each worker uploads a different file.
+     * The shared index assigns each file to only one worker.
+     */
     const uploadNext = async (): Promise<void> => {
         while (true) {
             const index = nextIndex++;
@@ -91,29 +177,76 @@ export async function uploadHls({
             }
 
             const file = files[index];
-            const key = posix.join(prefix, file!.relativePath);
+
+            if (!file) {
+                continue;
+            }
+
+            // Preserve rendition directories in B2 keys.
+            const key = posix.join(
+                prefix,
+                file.relativePath,
+            );
+
+            console.log(
+                "[HLS Upload] Uploading:",
+                key,
+            );
 
             const upload = new Upload({
                 client: S3,
                 params: {
                     Bucket: B2_BUCKET_NAME,
                     Key: key,
-                    Body: createReadStream(file!.path),
-                    ContentType: getContentType(file!.relativePath),
+                    Body: createReadStream(file.path),
+                    ContentType: getContentType(
+                        file.relativePath,
+                    ),
                 },
                 queueSize: 1,
             });
 
             await upload.done();
+
+            uploadedCount++;
+
+            console.log(
+                `[HLS Upload] Uploaded ${uploadedCount}/${files.length}:`,
+                key,
+            );
         }
     };
 
-    const workers = Array.from(
-        { length: Math.min(concurrency, files.length) },
-        () => uploadNext()
+    const workerCount = Math.min(
+        concurrency,
+        files.length,
     );
 
-    await Promise.all(workers);
+    console.log(
+        "[HLS Upload] Concurrent upload workers:",
+        workerCount,
+    );
 
-    return posix.join(prefix, "master.m3u8");
+    // If any upload fails, propagate the error to the caller.
+    await Promise.all(
+        Array.from(
+            { length: workerCount },
+            () => uploadNext(),
+        ),
+    );
+
+    const masterPlaylistKey = posix.join(
+        prefix,
+        "master.m3u8",
+    );
+
+    console.log(
+        "[HLS Upload] All files uploaded successfully.",
+        {
+            masterPlaylistKey,
+            totalFiles: files.length,
+        },
+    );
+
+    return masterPlaylistKey;
 }
