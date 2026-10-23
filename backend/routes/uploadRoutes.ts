@@ -9,6 +9,8 @@ import { v2 as cloudinary } from 'cloudinary';
 import { randomUUID } from "bullmq";
 import { videoQueue } from "../queues/videoQueue";
 import { S3 } from "../config/b2";
+import { createPlaybackToken } from "../utils/playbackToken";
+import type { VideoMetadata } from "../types/video";
 
 const uploadRouter = Router();
 
@@ -82,72 +84,110 @@ uploadRouter.get('/videos', async (req, res): Promise<any> => {
     }
 });
 
-uploadRouter.get('/video/:id', async (req, res) => {
-    try {
-        const videoId = req.params.id;
-        const cacheKey = `video:details:${videoId}`;
+uploadRouter.get("/video/:id", async (req, res) => {
+  try {
+    const videoId = req.params.id;
+    const cacheKey = `video:details:${videoId}`;
 
-        const cachedVideo = await redis.get(cacheKey);
+    let video: VideoMetadata | null = await redis.get<VideoMetadata>(cacheKey);
 
-        if (cachedVideo) {
-            console.log(`[Cache Hit] Serving Single Video: ${cacheKey}`);
-            return res.status(200).json({ video: cachedVideo });
-        }
+    if (video) {
+      console.log(`[Cache Hit] Serving Single Video: ${cacheKey}`);
+    } else {
+      console.log(`[Cache Miss] Querying Database: ${cacheKey}`);
 
-        console.log(`[Cache Miss] Querying Database: ${cacheKey}`);
+      const rawVideo = await prisma.uploads.findUnique({
+        where: { id: videoId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              channelName: true,
+              profilePicture: true,
+              gender: true,
+              banner: true,
+              username: true,
+              description: true,
+              _count: {
+                select: { subscribers: true },
+              },
+            },
+          },
+        },
+      });
 
-        const rawVideo = await prisma.uploads.findFirst({
-            where: { id: videoId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        channelName: true,
-                        profilePicture: true,
-                        gender: true,
-                        banner: true,
-                        username: true,
-                        description: true,
-                        _count: {
-                            select: { subscribers: true }
-                        }
-                    }
-                }
-            }
-        });
+      if (!rawVideo) {
+        return res.status(404).json({ error: "Video not found" });
+      }
 
-        if (!rawVideo) {
-            return res.status(404).json({ error: "Video not found" });
-        }
+      const { _count, ...userData } = rawVideo.user;
 
-        const { _count, ...userData } = rawVideo.user;
-        const formattedVideo = {
-            ...rawVideo,
-            user: {
-                ...userData,
-                subscriberCount: _count.subscribers
-            }
-        };
+      const { videoUrl: _originalVideoKey, ...videoMetadata } =
+        rawVideo;
 
-        const getCommand = new GetObjectCommand({
-            Bucket: B2_BUCKET_NAME,
-            Key: formattedVideo.videoUrl
-        });
+      video = {
+        ...videoMetadata,
+        user: {
+          ...userData,
+          subscriberCount: _count.subscribers,
+        },
+      };
 
-        const getUrl = await getSignedUrl(S3, getCommand, { expiresIn: 7200 });
-
-        if (formattedVideo.videoUrl.startsWith("videos/")) {
-            formattedVideo.videoUrl = getUrl;
-        }
-
-        await redis.set(cacheKey, formattedVideo, { ex: 300 });
-
-        return res.json({ video: formattedVideo });
-
-    } catch (error) {
-        console.error("Single Video Details Fetch Error:", error);
-        return res.status(500).json({ error: "Internal server error fetching video data." });
+      // Cache metadata, never a signed URL or playback token.
+      await redis.set(cacheKey, video, { ex: 300 });
     }
+
+    // Return the video's metadata even if it isn't published.
+    // Only published videos with a master playlist can be played.
+    let playbackUrl = null;
+
+    if (video.status === "PUBLISHED" && video.hlsMasterKey) {
+      const expectedPrefix = `hls/${video.id}/`;
+
+      if (!video.hlsMasterKey.startsWith(expectedPrefix)) {
+        console.error("Unexpected HLS master key:", video.id);
+
+        return res.status(500).json({
+          error: "Invalid video playback configuration",
+        });
+      }
+
+      const gatewayUrl = process.env.VIDEO_GATEWAY_URL;
+      const playbackSecret = process.env.PLAYBACK_TOKEN_SECRET;
+
+      if (!gatewayUrl || !playbackSecret) {
+        throw new Error("Playback gateway configuration is missing");
+      }
+
+      const token = createPlaybackToken(
+        video.id,
+        playbackSecret,
+        300,
+      );
+
+      const encodedKey = video.hlsMasterKey
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/");
+
+      playbackUrl =
+        `${gatewayUrl.replace(/\/+$/, "")}/${encodedKey}` +
+        `?token=${encodeURIComponent(token)}`;
+    }
+
+    return res.status(200).json({
+      video: {
+        ...video,
+        playbackUrl,
+      },
+    });
+  } catch (error) {
+    console.error("Single Video Details Fetch Error:", error);
+
+    return res.status(500).json({
+      error: "Internal server error fetching video data.",
+    });
+  }
 });
 
 uploadRouter.post('/video', auth, async (req, res) => {
