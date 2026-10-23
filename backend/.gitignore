@@ -10,7 +10,6 @@ dist
 coverage
 *.lcov
 
-set-cors.js
 /generated
 
 # logs
