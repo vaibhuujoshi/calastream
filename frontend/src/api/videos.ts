@@ -15,7 +15,7 @@ export interface WatchUser {
 
 export interface WatchVideo {
     id: string;
-    videoUrl: string;
+    playbackUrl: string;
     thumbnail: string;
     title: string;
     description: string;
@@ -27,17 +27,37 @@ export interface WatchVideo {
 }
 
 // 1. Fetch Single Video (For the main player)
-export async function getVideo(id: string): Promise<WatchVideo> {
-    const response = await fetch(`${BASE_URL}/video/${id}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-    });
 
-    if (!response.ok) throw new Error("Failed to fetch video");
-    const data = await response.json();
-    return data.video;
+export async function getVideo(id: string): Promise<WatchVideo> {
+    const response = await fetch(
+        `${BASE_URL}/video/${encodeURIComponent(id)}`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        },
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to fetch video (${response.status})`,
+        );
+    }
+
+    const result = await response.json();
+    const video = result.video as WatchVideo | undefined;
+
+    if (!video?.id || !video.playbackUrl) {
+        throw new Error(
+            "Invalid video response: missing video ID or playback URL",
+        );
+    }
+
+    return video;
 }
+
 
 // 2. Fetch All Videos (For the feed and the suggested sidebar)
 export interface PaginatedVideosResponse {

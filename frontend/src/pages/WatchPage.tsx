@@ -129,7 +129,7 @@ export default function WatchPage() {
 
               {/* Core Player, Meta, and Editorial Thread Column */}
               <div className="flex-1 w-full max-w-7xl">
-                <VideoPlayer videoUrl={video.videoUrl} thumbnail={video.thumbnail} />
+                <VideoPlayer videoUrl={video.playbackUrl} thumbnail={video.thumbnail} />
                 <VideoInfo video={video} />
                 <VideoDescription video={video} />
                 <CommentsSection />
