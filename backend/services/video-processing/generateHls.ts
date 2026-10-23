@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { mkdir, access } from "fs/promises";
+import { mkdir, access, readdir } from "fs/promises";
 import { join } from "path";
 
 type GenerateHlsOptions = {
@@ -13,6 +13,7 @@ export async function generateHls({
 }: GenerateHlsOptions): Promise<string> {
     await mkdir(outputDirectory, { recursive: true });
 
+    // Create the rendition directories before FFmpeg starts.
     for (const rendition of ["1080p", "720p", "480p"]) {
         await mkdir(join(outputDirectory, rendition), {
             recursive: true,
@@ -100,6 +101,20 @@ export async function generateHls({
         });
     });
 
+    // Diagnostic: inspect the output directory after FFmpeg completes.
+    const generatedEntries = await readdir(outputDirectory, {
+        withFileTypes: true,
+    });
+
+    console.log(
+        "Generated HLS output:",
+        generatedEntries.map((entry) => ({
+            name: entry.name,
+            isDirectory: entry.isDirectory(),
+        })),
+    );
+
+    // Verify that the master playlist exists.
     const masterPlaylistPath = join(
         outputDirectory,
         "master.m3u8"
@@ -111,6 +126,17 @@ export async function generateHls({
         throw new Error(
             "FFmpeg finished, but the master playlist was not found"
         );
+    }
+
+    // Verify that each rendition has its playlist.
+    const renditions = ["1080p", "720p", "480p"];
+
+    for (const rendition of renditions) {
+        const renditionDirectory = join(outputDirectory, rendition);
+
+        const files = await readdir(renditionDirectory);
+
+        console.log(`[${rendition}] Generated files:`, files);
     }
 
     return masterPlaylistPath;
